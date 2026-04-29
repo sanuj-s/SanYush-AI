@@ -75,7 +75,7 @@ export default function GuidedPlanner() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+      <div className="flex-1 relative overflow-y-auto overflow-x-hidden chat-scrollbar">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStepId}
@@ -83,7 +83,7 @@ export default function GuidedPlanner() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="w-full max-w-2xl px-6 py-8 h-full flex flex-col justify-center overflow-y-auto chat-scrollbar"
+            className={\`w-full max-w-2xl mx-auto px-6 py-8 min-h-full flex flex-col \${currentStepId === "OUTPUT" ? "justify-start" : "justify-center"}\`}
           >
             {currentStepId === "INTENT" && <StepIntent state={state} updateState={updateState} onNext={nextStep} />}
             {currentStepId === "DESTINATION" && <StepDestination state={state} updateState={updateState} onNext={nextStep} />}

@@ -32,10 +32,32 @@ export default function OutputScreen({ state, onReset }: Props) {
     try {
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Missing VITE_GEMINI_API_KEY in environment variables.");
+        console.warn("Missing VITE_GEMINI_API_KEY. Falling back to mock data.");
+        // Simulate network delay
+        await new Promise(r => setTimeout(r, 2000));
+        setPlan({
+          budgetCard: {
+            destination: state.destinationMode === "known" ? state.destination : "Bali, Indonesia",
+            days: 5,
+            style: state.style || "Balanced",
+            travel: 25000,
+            hotel: 15000,
+            food: 8000,
+            activities: 5000,
+            miscellaneous: 2000,
+            total: 55000
+          },
+          itinerary: [
+            { day: 1, title: "Arrival & Beach Sunset", activities: ["Check-in to hotel", "Relax at Seminyak Beach", "Seafood dinner"], estimatedCost: 2000 },
+            { day: 2, title: "Cultural Exploration", activities: ["Visit Ubud Monkey Forest", "Tegalalang Rice Terrace", "Traditional Dance Show"], estimatedCost: 3500 },
+            { day: 3, title: "Island Hopping", activities: ["Boat trip to Nusa Penida", "Snorkeling at Crystal Bay", "Sunset views"], estimatedCost: 5000 }
+          ]
+        });
+        setLoading(false);
+        return;
       }
 
-      const destText = state.destinationMode === "known" ? `Destination: \${state.destination}` : "Destination: Please suggest a destination based on budget and preferences.";
+      const destText = state.destinationMode === "known" ? `Destination: ${state.destination}` : "Destination: Please suggest a destination based on budget and preferences.";
 
       const prompt = `
 You are a master travel planner. I need a highly structured JSON plan based on the following exact constraints.
