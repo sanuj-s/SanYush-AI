@@ -12,6 +12,10 @@ import BookingLinks from "../BookingLinks";
 import WeatherWidget from "../WeatherWidget";
 import MapView from "../MapView";
 import PackingList from "../PackingList";
+import MultiPlanSelector from "./MultiPlanSelector";
+import ScenarioSimulator from "./ScenarioSimulator";
+import ExplainabilityWidget from "./ExplainabilityWidget";
+import { PlanningEngine } from "../../lib/planning-engine";
 
 interface Props {
   state: PlannerState;
@@ -19,33 +23,35 @@ interface Props {
 }
 
 export default function OutputScreen({ state, onReset }: Props) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(state.destinationMode === "known");
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<any | null>(null);
+  const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null);
 
   useEffect(() => {
-    generatePlan();
+    if (state.destinationMode === "known") {
+      generatePlan(state.destination.toLowerCase());
+    }
   }, []);
 
-  const generatePlan = async () => {
+  const handleSelectPlan = (key: string) => {
+    setSelectedPlanKey(key);
+    generatePlan(key);
+  };
+
+  const generatePlan = async (targetDestString: string = "") => {
     setLoading(true);
     setError(null);
     try {
       // --- DEMO HACK: Smart Interception ---
-      // Check if the destination matches a "Golden Path"
-      const targetDest = state.destinationMode === "known" ? state.destination.toLowerCase() : "";
-      
       let matchedPath = null;
-      if (targetDest.includes("goa")) matchedPath = goldenPaths.goa;
-      else if (targetDest.includes("dubai")) matchedPath = goldenPaths.dubai;
-      else if (targetDest.includes("bali")) matchedPath = goldenPaths.bali;
+      if (targetDestString.includes("goa")) matchedPath = goldenPaths.goa;
+      else if (targetDestString.includes("dubai")) matchedPath = goldenPaths.dubai;
+      else if (targetDestString.includes("bali")) matchedPath = goldenPaths.bali;
 
       if (matchedPath) {
         console.log("DEMO MODE: Intercepting query and loading Golden Path JSON.");
-        // Simulate a slight network delay to make it feel real
         await new Promise(r => setTimeout(r, 1500));
-        
-        // Apply fake variability so numbers don't look static across multiple demos
         const dynamicPlan = applyFakeVariability(matchedPath, state.budget);
         setPlan(dynamicPlan);
         setLoading(false);
@@ -53,76 +59,11 @@ export default function OutputScreen({ state, onReset }: Props) {
       }
       // ------------------------------------
 
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey) {
-        console.warn("Missing VITE_GEMINI_API_KEY. Falling back to mock data.");
-        await new Promise(r => setTimeout(r, 2000));
-        setPlan(applyFakeVariability(goldenPaths.bali, state.budget));
-        setLoading(false);
-        return;
-      }
-
-      const destText = state.destinationMode === "known" ? `Destination: ${state.destination}` : "Destination: Please suggest a destination based on budget and preferences.";
-
-      const prompt = `
-You are a master travel planner. I need a highly structured JSON plan based on the following exact constraints.
-DO NOT output any markdown blocks, only pure JSON.
-
-Constraints:
-- Intent: \${state.intent}
-- \${destText}
-- Budget: ₹\${state.budget} total (must be strictly respected)
-- Duration: \${state.duration}
-- Travelers: \${state.travelers}
-- Style: \${state.style}
-- Dates: \${state.dates}
-- Preferences: \${state.preferences.join(", ")}
-
-Output EXACTLY this JSON structure:
-{
-  "budgetCard": {
-    "destination": "Name of the destination you chose or was given",
-    "days": <number of days based on duration>,
-    "style": "\${state.style}",
-    "travel": <number>,
-    "hotel": <number>,
-    "food": <number>,
-    "activities": <number>,
-    "miscellaneous": <number>,
-    "total": <number matching the budget as closely as possible>
-  },
-  "itinerary": [
-    {
-      "day": 1,
-      "title": "Short catchy title",
-      "activities": ["Activity 1", "Activity 2"],
-      "estimatedCost": <number>
-    }
-  ]
-}
-`;
-
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            responseMimeType: "application/json",
-          }
-        }),
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch plan from AI.");
-
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!text) throw new Error("Empty response from AI.");
-
-      const parsed = JSON.parse(text);
-      setPlan(parsed);
+      // --- DETERMINISTIC ENGINE FALLBACK ---
+      // Instead of an LLM, use the programmatic PlanningEngine for a deterministic guarantee
+      await new Promise(r => setTimeout(r, 1200)); // Simulate thinking
+      const generatedPlan = PlanningEngine.run(state, targetDestString);
+      setPlan(generatedPlan);
     } catch (e: any) {
       console.error(e);
       setError(e.message || "An unexpected error occurred.");
@@ -130,6 +71,10 @@ Output EXACTLY this JSON structure:
       setLoading(false);
     }
   };
+
+  if (state.destinationMode === "suggest" && !selectedPlanKey) {
+    return <MultiPlanSelector state={state} onSelect={handleSelectPlan} />;
+  }
 
   if (loading) {
     return (
@@ -166,6 +111,38 @@ Output EXACTLY this JSON structure:
 
   const dest = plan?.budgetCard?.destination;
 
+  const handleSimulate = async (type: string) => {
+    setLoading(true);
+    await new Promise(r => setTimeout(r, 800)); // Fast recalculation feel
+    
+    setPlan((prev: any) => {
+      const p = JSON.parse(JSON.stringify(prev)); // Deep copy
+      if (!p?.budgetCard) return p;
+
+      if (type === "add_budget") {
+        p.budgetCard.hotel += 10000;
+        p.budgetCard.activities += 10000;
+        p.budgetCard.total += 20000;
+        p.budgetCard.style = "Luxury";
+      } else if (type === "add_days") {
+        p.budgetCard.days += 2;
+        p.budgetCard.hotel += Math.floor(p.budgetCard.hotel * 0.4);
+        p.budgetCard.food += Math.floor(p.budgetCard.food * 0.4);
+        p.budgetCard.total = p.budgetCard.travel + p.budgetCard.hotel + p.budgetCard.food + p.budgetCard.activities + p.budgetCard.miscellaneous;
+      } else if (type === "upgrade_luxury") {
+        p.budgetCard.hotel *= 2.5;
+        p.budgetCard.style = "Premium Luxury";
+        p.budgetCard.total = p.budgetCard.travel + p.budgetCard.hotel + p.budgetCard.food + p.budgetCard.activities + p.budgetCard.miscellaneous;
+      } else if (type === "more_activities") {
+        p.budgetCard.activities += 15000;
+        p.budgetCard.total += 15000;
+      }
+      return p;
+    });
+    
+    setLoading(false);
+  };
+
   return (
     <div className="w-full pb-20">
       <div className="flex items-center justify-between mb-8">
@@ -187,6 +164,8 @@ Output EXACTLY this JSON structure:
             <CurrencyConverter amountInr={plan.budgetCard.total} />
           </div>
         )}
+
+        <ExplainabilityWidget state={state} plan={plan} />
 
         {/* Itinerary Timeline */}
         {plan?.itinerary && (
@@ -211,6 +190,8 @@ Output EXACTLY this JSON structure:
             <PackingList destination={dest} />
           </>
         )}
+
+        <ScenarioSimulator onSimulate={handleSimulate} />
       </div>
     </div>
   );
