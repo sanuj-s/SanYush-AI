@@ -36,18 +36,20 @@ const BudgetCard = ({ budget }: BudgetCardProps) => {
       {/* Breakdown */}
       <div className="space-y-3">
         {items.map(({ key, label, icon: Icon, color }) => {
-          const value = budget[key];
-          const pct = Math.round((value / total) * 100);
+          const value = budget[key] || 0;
+          const safeTotal = total || 1;
+          const pct = Math.round((value / safeTotal) * 100);
+
           return (
-            <div key={key}>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="flex items-center gap-2 text-muted-foreground">
-                  <Icon className={`w-3.5 h-3.5 ${color}`} />
-                  {label}
-                </span>
+            <div key={key} className="space-y-2 group">
+              <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-[10px]">{pct}%</span>
-                  <span className="font-semibold text-foreground tabular-nums">₹{value.toLocaleString("en-IN")}</span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${color.split(' ')[0]}`} />
+                  <span className="text-muted-foreground font-medium group-hover:text-foreground transition-colors">{label}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md">{pct}%</span>
+                  <span className="font-semibold text-foreground tabular-nums">₹{(value || 0).toLocaleString("en-IN")}</span>
                 </div>
               </div>
               <div className="w-full bg-secondary rounded-full h-1 overflow-hidden">
