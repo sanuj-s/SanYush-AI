@@ -14,7 +14,7 @@ export class PlanningEngine {
     const minBudget = days * minBudgetPerDay * travelerCount;
     
     if (state.budget < minBudget) {
-      throw new Error(\`Budget of ₹\${state.budget.toLocaleString("en-IN")} is mathematically impossible for \${days} days with \${travelerCount} traveler(s). Minimum required: ₹\${minBudget.toLocaleString("en-IN")}\`);
+      throw new Error(`Budget of ₹${state.budget.toLocaleString("en-IN")} is mathematically impossible for ${days} days with ${travelerCount} traveler(s). Minimum required: ₹${minBudget.toLocaleString("en-IN")}`);
     }
 
     return { days, travelerCount };
@@ -54,14 +54,14 @@ export class PlanningEngine {
     const itinerary = [];
     
     // Add some flavor based on preferences
-    const mainActivity = preferences.length > 0 ? \`\${preferences[0]} Exploration\` : "City Sightseeing";
+    const mainActivity = preferences.length > 0 ? `${preferences[0]} Exploration` : "City Sightseeing";
     const altActivity = preferences.length > 1 ? preferences[1] : "Local Culture";
 
     for (let i = 1; i <= days; i++) {
       if (i === 1) {
         itinerary.push({ 
           day: 1, 
-          title: \`Arrival in \${destination}\`, 
+          title: `Arrival in ${destination}`, 
           activities: ["Airport Transfer", "Hotel Check-in", "Light local walking tour", "Welcome Dinner"], 
           estimatedCost: Math.round(dailyActivityFoodBudget * 0.7) 
         });
@@ -75,15 +75,15 @@ export class PlanningEngine {
       } else if (i % 2 === 0) {
         itinerary.push({ 
           day: i, 
-          title: \`\${mainActivity} Day\`, 
-          activities: [\`Morning \${mainActivity.toLowerCase()} tour\`, "Local cuisine lunch", "Afternoon leisure", "Evening entertainment"], 
+          title: `${mainActivity} Day`, 
+          activities: [`Morning ${mainActivity.toLowerCase()} tour`, "Local cuisine lunch", "Afternoon leisure", "Evening entertainment"], 
           estimatedCost: Math.round(dailyActivityFoodBudget * 1.2) 
         });
       } else {
         itinerary.push({ 
           day: i, 
-          title: \`\${altActivity} & Discovery\`, 
-          activities: ["Guided morning experience", "Street food / casual lunch", \`Afternoon \${altActivity.toLowerCase()}\`, "Relaxing dinner"], 
+          title: `${altActivity} & Discovery`, 
+          activities: ["Guided morning experience", "Street food / casual lunch", `Afternoon ${altActivity.toLowerCase()}`, "Relaxing dinner"], 
           estimatedCost: dailyActivityFoodBudget 
         });
       }

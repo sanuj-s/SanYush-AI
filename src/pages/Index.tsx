@@ -1,7 +1,7 @@
-import GuidedPlanner from "@/components/GuidedPlanner";
+import ConversationalPlanner from "@/components/ConversationalPlanner";
 
 const Index = () => {
-  return <GuidedPlanner />;
+  return <ConversationalPlanner />;
 };
 
 export default Index;
