@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import WeatherWidget from "./WeatherWidget";
 import MapView from "./MapView";
+import { Sparkles, User } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -16,7 +17,6 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
   const isUser = message.role === "user";
   const dest = message.budgetCard?.destination;
 
-  // Generate chips dynamically based on content
   const getChips = () => {
     if (isUser) return [];
     if (message.itinerary) return ["Add a day trip", "Cheaper alternatives", "Food recommendations"];
@@ -27,42 +27,56 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
   const chips = getChips();
 
   return (
-    <div className={`flex items-end gap-2 animate-fade-in-up ${isUser ? "flex-row-reverse" : ""}`}>
+    <div className={`flex items-end gap-3 md:gap-4 ${isUser ? "flex-row-reverse" : ""}`}>
       {/* Avatar */}
       <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
-          isUser ? "bg-primary text-primary-foreground" : "travel-gradient text-primary-foreground"
+        className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-lg ${
+          isUser 
+            ? "bg-gradient-to-br from-primary to-accent text-white shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
+            : "bg-black/40 border border-white/10 text-primary backdrop-blur-md"
         }`}
       >
-        {isUser ? "You" : "AI"}
+        {isUser ? <User className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
       </div>
-      {/* Bubble */}
-      <div className={`max-w-[80%] min-w-0 space-y-2`}>
+      
+      {/* Bubble Container */}
+      <div className={`max-w-[85%] md:max-w-[75%] space-y-3`}>
         <div
-          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed overflow-hidden ${
+          className={`rounded-[1.5rem] px-5 py-4 text-[15px] leading-relaxed overflow-hidden relative shadow-xl backdrop-blur-xl border ${
             isUser
-              ? "bg-chat-user text-chat-user-foreground rounded-br-md"
-              : "bg-chat-bot text-chat-bot-foreground rounded-bl-md"
+              ? "bg-gradient-to-br from-primary/90 to-blue-600/90 text-white rounded-br-md border-white/20"
+              : "bg-black/40 text-white/90 rounded-bl-md border-white/10"
           }`}
         >
+          {/* Destination Header Image for AI */}
           {!isUser && dest && (
-            <div className="-mx-4 -mt-3 mb-3 h-32 bg-muted relative overflow-hidden">
-              <img src={`https://source.unsplash.com/800x300/?travel,${encodeURIComponent(dest)}`} alt={dest} className="w-full h-full object-cover" />
+            <div className="-mx-5 -mt-4 mb-4 h-40 bg-black/50 relative overflow-hidden group">
+              <img 
+                src={`https://source.unsplash.com/800x400/?travel,${encodeURIComponent(dest)}`} 
+                alt={dest} 
+                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <h3 className="absolute bottom-3 left-4 text-2xl font-black text-white tracking-tight drop-shadow-md">
+                {dest}
+              </h3>
             </div>
           )}
-          <div className="prose prose-sm dark:prose-invert max-w-none">
+
+          <div className={`prose prose-sm max-w-none ${isUser ? "prose-invert" : "dark:prose-invert prose-p:leading-relaxed prose-headings:font-bold prose-a:text-primary hover:prose-a:text-primary/80 prose-strong:text-white"}`}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {message.content}
             </ReactMarkdown>
           </div>
         </div>
         
+        {/* Rich Components */}
         {message.budgetCard && <BudgetCard budget={message.budgetCard} />}
         {message.itinerary && <ItineraryCard itinerary={message.itinerary} />}
         {message.comparison && <ComparisonCard data={message.comparison} />}
         
         {!isUser && dest && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
             <WeatherWidget destination={dest} />
             <MapView destination={dest} />
           </div>
@@ -70,12 +84,12 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
 
         {/* Follow up chips */}
         {!isUser && onChipClick && (
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             {chips.map(chip => (
               <button 
                 key={chip}
                 onClick={() => onChipClick(chip)}
-                className="text-xs px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                className="text-xs px-4 py-2 rounded-full glass-card text-white hover:bg-white/20 transition-all hover:-translate-y-0.5 active:translate-y-0 shadow-sm border-white/10 font-medium"
               >
                 {chip}
               </button>
@@ -83,7 +97,7 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
           </div>
         )}
         
-        <span className="text-[10px] text-muted-foreground mt-1 block px-1 text-right">
+        <span className={`text-[10px] text-white/40 block px-2 ${isUser ? "text-right" : "text-left"}`}>
           {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
