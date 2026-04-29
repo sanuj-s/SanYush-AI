@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Download, RotateCcw, Plane, Mic, Save, FolderOpen, PieChart as PieChartIcon, X } from "lucide-react";
+import { Send, Download, RotateCcw, Plane, Mic, Save, FolderOpen, PieChart as PieChartIcon, X, Compass } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
@@ -328,12 +328,12 @@ const ChatInterface = () => {
           {/* Header */}
           <header className="px-6 py-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/20 text-primary rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                <Plane className="w-6 h-6" />
+              <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 text-primary rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.3)] ring-1 ring-white/10">
+                <Compass className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <h1 className="font-bold text-xl tracking-tight text-white">AI Travel Planner</h1>
-                <p className="text-xs text-white/50 font-medium tracking-wide uppercase">Smart Budget & Itinerary Assistant</p>
+                <h1 className="font-bold text-2xl tracking-tight text-white">SanYush <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">AI</span></h1>
+                <p className="text-[10px] text-white/50 font-bold tracking-[0.2em] uppercase mt-0.5">By Piyush & Sanuj</p>
               </div>
             </div>
             

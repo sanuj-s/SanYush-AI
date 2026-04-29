@@ -6,6 +6,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import WeatherWidget from "./WeatherWidget";
 import MapView from "./MapView";
+import PackingList from "./PackingList";
+import CurrencyConverter from "./CurrencyConverter";
+import BookingLinks from "./BookingLinks";
 import { Sparkles, User } from "lucide-react";
 
 interface ChatMessageProps {
@@ -71,7 +74,12 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
         </div>
         
         {/* Rich Components */}
-        {message.budgetCard && <BudgetCard budget={message.budgetCard} />}
+        {message.budgetCard && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <BudgetCard budget={message.budgetCard} />
+            <CurrencyConverter amountInr={message.budgetCard.total} />
+          </div>
+        )}
         {message.itinerary && <ItineraryCard itinerary={message.itinerary} />}
         {message.comparison && <ComparisonCard data={message.comparison} />}
         
@@ -79,6 +87,8 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
             <WeatherWidget destination={dest} />
             <MapView destination={dest} />
+            <PackingList destination={dest} />
+            <BookingLinks destination={dest} />
           </div>
         )}
 
