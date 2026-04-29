@@ -155,6 +155,18 @@ export default function OutputScreen({ state, onReset }: Props) {
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        <button onClick={() => handleSimulate("add_days")} className="px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg border border-primary/20 hover:bg-primary/20 transition-all text-sm flex items-center gap-2">
+          ⏳ Change Duration
+        </button>
+        <button onClick={() => handleSimulate("upgrade_luxury")} className="px-4 py-2 bg-secondary text-foreground font-bold rounded-lg hover:bg-secondary/80 transition-all text-sm flex items-center gap-2">
+          ⚙️ Optimize Budget
+        </button>
+        <button onClick={onReset} className="px-4 py-2 border border-border text-muted-foreground font-bold rounded-lg hover:bg-secondary hover:text-foreground transition-all text-sm flex items-center gap-2 ml-auto">
+          <RefreshCcw className="w-3 h-3" /> Regenerate
+        </button>
+      </div>
+
       <div className="space-y-8">
         {/* Budget Row */}
         {plan?.budgetCard && (

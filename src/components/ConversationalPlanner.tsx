@@ -205,7 +205,7 @@ export default function ConversationalPlanner() {
         <header className="shrink-0 px-6 py-4 border-b border-border bg-card/50 backdrop-blur-md flex items-center justify-between z-10">
           <div>
             <h1 className="text-xl font-bold tracking-tight">SanYush <span className="text-primary">AI</span></h1>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Decision Engine</p>
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">AI Travel Planning Assistant</p>
           </div>
           {currentStep === "OUTPUT" && (
             <button onClick={() => window.location.reload()} className="text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20">
@@ -232,8 +232,8 @@ export default function ConversationalPlanner() {
 
                     <div className={`px-4 py-3 rounded-2xl text-[15px] leading-relaxed ${
                       msg.role === 'user' 
-                        ? 'bg-primary text-primary-foreground rounded-tr-sm' 
-                        : 'bg-secondary text-foreground rounded-tl-sm'
+                        ? 'bg-primary text-primary-foreground rounded-tr-sm shadow-md' 
+                        : 'bg-gradient-to-br from-card to-secondary/50 border border-border/50 shadow-sm text-foreground rounded-tl-sm font-medium'
                     }`}>
                       {msg.text}
                     </div>
@@ -264,6 +264,14 @@ export default function ConversationalPlanner() {
             
             <div className="h-4" /> {/* Bottom padding */}
           </div>
+        </div>
+
+        {/* TRUST SIGNALS FOOTER */}
+        <div className="shrink-0 py-3 text-center border-t border-border/50 bg-card/30 backdrop-blur flex flex-col items-center justify-center gap-1 z-10">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+            <Sparkles className="w-3 h-3 text-primary" /> Powered by AI Engine v2.0
+          </div>
+          <p className="text-[9px] text-muted-foreground/60 uppercase tracking-widest">⚡ Real-time constraints applied</p>
         </div>
       </div>
 
