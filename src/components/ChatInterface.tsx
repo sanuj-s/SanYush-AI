@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Download, RotateCcw, Plane, Mic, Save, FolderOpen, PieChart as PieChartIcon, X, Compass } from "lucide-react";
+import { Send, Download, RotateCcw, Mic, Save, FolderOpen, PieChart as PieChartIcon, X, Compass, BarChart3, Clock } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,7 @@ import {
   resetConversation,
 } from "@/lib/travel-ai";
 
-const COLORS = ["#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#64748b"];
+const COLORS = ["#c2956a", "#a3c4a3", "#d4a85c", "#7da3b5", "#8a8a8a"];
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([getGreetingMessage()]);
@@ -23,12 +23,9 @@ const ChatInterface = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [trips, setTrips] = useState<any[]>([]);
-
-  // Drawer states
   const [showHistory, setShowHistory] = useState(false);
   const [showChart, setShowChart] = useState(false);
 
-  // Force dark mode for premium look
   useEffect(() => {
     document.documentElement.classList.add("dark");
   }, []);
@@ -46,32 +43,23 @@ const ChatInterface = () => {
     try {
       const { data, error } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
       if (!error && data) setTrips(data);
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  useEffect(() => {
-    fetchTrips();
-  }, []);
+  useEffect(() => { fetchTrips(); }, []);
 
   const saveTrip = async () => {
-    const name = prompt("Enter a name for this trip:");
+    const name = prompt("Name this trip:");
     if (!name) return;
     try {
       await supabase.from('trips').insert([{ name, history: messages }]);
       fetchTrips();
-      alert("Trip saved successfully!");
-    } catch (e) {
-      console.error(e);
-      alert("Failed to save. Make sure the 'trips' table exists in Supabase.");
-    }
+    } catch (e) { console.error(e); alert("Failed to save trip."); }
   };
 
   const loadTrip = (trip: any) => {
     if (!trip.history) return;
-    const parsed = trip.history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
-    setMessages(parsed);
+    setMessages(trip.history.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
     setShowHistory(false);
   };
 
@@ -91,17 +79,12 @@ const ChatInterface = () => {
       body: JSON.stringify({ messages: payload }),
     });
 
-    if (resp.status === 429) throw new Error("Rate limit exceeded — please wait a moment.");
-    if (resp.status === 402) throw new Error("AI credits exhausted. Add credits in Lovable workspace.");
+    if (resp.status === 429) throw new Error("Rate limit exceeded — please wait.");
+    if (resp.status === 402) throw new Error("AI credits exhausted.");
     if (!resp.ok || !resp.body) throw new Error("Failed to reach AI service.");
 
     const assistantId = Math.random().toString(36).substring(2);
-    const assistantMsg: Message = {
-      id: assistantId,
-      role: "bot",
-      content: "",
-      timestamp: new Date(),
-    };
+    const assistantMsg: Message = { id: assistantId, role: "bot", content: "", timestamp: new Date() };
     setMessages((prev) => [...prev, assistantMsg]);
 
     const reader = resp.body.getReader();
@@ -129,14 +112,9 @@ const ChatInterface = () => {
           if (delta) {
             assistantText += delta;
             let cleanText = assistantText.replace(/```json[\s\S]*?(```)?/g, "").trim();
-            setMessages((prev) =>
-              prev.map((m) => (m.id === assistantId ? { ...m, content: cleanText } : m)),
-            );
+            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: cleanText } : m)));
           }
-        } catch {
-          buffer = line + "\n" + buffer;
-          break;
-        }
+        } catch { buffer = line + "\n" + buffer; break; }
       }
     }
 
@@ -150,31 +128,17 @@ const ChatInterface = () => {
         budgetCard = parsed.budgetCard;
         itinerary = parsed.itinerary;
         finalContent = assistantText.replace(jsonMatch[0], "").trim();
-      } catch (e) {
-        console.error("Failed to parse JSON block", e);
-      }
+      } catch (e) { console.error("Failed to parse JSON block", e); }
     }
 
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === assistantId
-          ? { ...m, content: finalContent, budgetCard, itinerary }
-          : m
-      )
-    );
+    setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: finalContent, budgetCard, itinerary } : m));
   };
 
   const handleSend = useCallback((overrideText?: string) => {
     const text = (overrideText || input).trim();
     if (!text || isTyping) return;
 
-    const userMsg: Message = {
-      id: Math.random().toString(36).substring(2),
-      role: "user",
-      content: text,
-      timestamp: new Date(),
-    };
-
+    const userMsg: Message = { id: Math.random().toString(36).substring(2), role: "user", content: text, timestamp: new Date() };
     const nextHistory = [...messages, userMsg];
     setMessages(nextHistory);
     if (!overrideText) setInput("");
@@ -183,108 +147,55 @@ const ChatInterface = () => {
     streamFromGemini(nextHistory)
       .catch((err) => {
         const fallback = processMessage(text);
-        setMessages((prev) => [
-          ...prev,
-          {
-            ...fallback,
-            content: `⚠️ ${err.message}\n\nFalling back to local engine:\n\n${fallback.content}`,
-          },
-        ]);
+        setMessages((prev) => [...prev, { ...fallback, content: `⚠️ ${err.message}\n\n${fallback.content}` }]);
       })
       .finally(() => setIsTyping(false));
   }, [input, isTyping, messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  const handleReset = () => {
-    resetConversation();
-    setMessages([getGreetingMessage()]);
-    setInput("");
-  };
+  const handleReset = () => { resetConversation(); setMessages([getGreetingMessage()]); setInput(""); };
 
   const startListening = () => {
     // @ts-ignore
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice input is not supported in this browser.");
-      return;
-    }
+    if (!SpeechRecognition) { alert("Voice input not supported."); return; }
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
     recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
-      setInput((prev) => prev ? prev + " " + transcript : transcript);
-    };
+    recognition.onresult = (event: any) => { setInput((prev) => prev ? prev + " " + event.results[0][0].transcript : event.results[0][0].transcript); };
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
     recognition.start();
   };
 
   const handleDownload = () => {
-    const activePlan = messages.slice().reverse().find(m => m.budgetCard);
-    if (!activePlan || !activePlan.budgetCard) {
-      alert("No trip plan to export. Generate a plan first!");
-      return;
-    }
-
+    const plan = messages.slice().reverse().find(m => m.budgetCard);
+    if (!plan?.budgetCard) { alert("No plan to export yet."); return; }
     const doc = new jsPDF();
-    const { destination, days, style, total, travel, hotel, food, activities, miscellaneous } = activePlan.budgetCard;
-
-    doc.setFontSize(20);
-    doc.text(`AI Travel Plan: ${destination}`, 14, 22);
-    doc.setFontSize(12);
-    doc.text(`Duration: ${days} days | Style: ${style} | Total Budget: INR ${total.toLocaleString()}`, 14, 30);
-
-    (doc as any).autoTable({
-      startY: 40,
-      head: [['Category', 'Estimated Cost (INR)']],
-      body: [
-        ['Flights/Travel', travel],
-        ['Accommodation', hotel],
-        ['Food', food],
-        ['Activities', activities],
-        ['Miscellaneous', miscellaneous],
-      ],
-    });
-
-    if (activePlan.itinerary && activePlan.itinerary.length > 0) {
-      let startY = (doc as any).lastAutoTable.finalY + 10;
-      doc.text("Day-wise Itinerary", 14, startY);
-      
-      const itineraryBody = activePlan.itinerary.map((day: any) => [
-        `Day ${day.day}: ${day.title}`,
-        day.activities.join('\n'),
-        day.estimatedCost
-      ]);
-
-      (doc as any).autoTable({
-        startY: startY + 5,
-        head: [['Day', 'Activities', 'Cost (INR)']],
-        body: itineraryBody,
-      });
+    const b = plan.budgetCard;
+    doc.setFontSize(20); doc.text(`Travel Plan: ${b.destination}`, 14, 22);
+    doc.setFontSize(11); doc.text(`${b.days} days · ${b.style} · ₹${b.total.toLocaleString()}`, 14, 30);
+    (doc as any).autoTable({ startY: 38, head: [['Category', 'Cost (₹)']], body: [['Travel', b.travel], ['Hotel', b.hotel], ['Food', b.food], ['Activities', b.activities], ['Misc', b.miscellaneous]] });
+    if (plan.itinerary?.length) {
+      const sy = (doc as any).lastAutoTable.finalY + 10;
+      doc.text("Itinerary", 14, sy);
+      (doc as any).autoTable({ startY: sy + 5, head: [['Day', 'Activities', '₹']], body: plan.itinerary.map((d: any) => [`Day ${d.day}: ${d.title}`, d.activities.join(', '), d.estimatedCost]) });
     }
-
-    doc.save(`travel-plan-${destination.replace(/\s+/g, '-')}.pdf`);
+    doc.save(`${b.destination.replace(/\s+/g, '-')}-plan.pdf`);
   };
 
   const quickPrompts = [
-    "Plan a 5 day trip to Bhubaneswar",
-    "3 days in Tokyo budget trip",
+    "Plan 5 days in Bhubaneswar",
+    "Budget trip to Tokyo",
     "Compare Bali vs Bangkok",
-    "Trip to Paris under ₹1,00,000",
+    "Paris under ₹1,00,000",
   ];
 
-  // Derive dynamic background and chart data
   const latestBudgetMsg = messages.slice().reverse().find(m => m.budgetCard);
-  const activeDest = latestBudgetMsg?.budgetCard?.destination;
   const latestBudget = latestBudgetMsg?.budgetCard;
-  
   const pieData = latestBudget ? [
     { name: 'Travel', value: latestBudget.travel },
     { name: 'Hotel', value: latestBudget.hotel },
@@ -294,183 +205,149 @@ const ChatInterface = () => {
   ] : [];
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-black text-foreground font-sans">
-      
-      {/* Immersive Dynamic Background */}
-      <AnimatePresence mode="wait">
-        {activeDest ? (
-          <motion.img 
-            key={activeDest}
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 0.3 }} 
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5 }}
-            src={`https://source.unsplash.com/1600x900/?travel,${encodeURIComponent(activeDest)}`}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-        ) : (
-          <motion.div 
-            key="gradient"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.2 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-br from-primary via-accent to-black"
-          />
-        )}
-      </AnimatePresence>
-      <div className="absolute inset-0 backdrop-blur-[60px] bg-black/40 pointer-events-none" />
+    <div className="relative w-screen h-screen overflow-hidden bg-background flex flex-col">
 
-      {/* Main Glass Interface */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-2 md:p-6 lg:p-10">
-        
-        <div className="w-full max-w-6xl h-full flex flex-col glass-panel rounded-[2.5rem] overflow-hidden relative shadow-2xl ring-1 ring-white/10">
-          
-          {/* Header */}
-          <header className="px-6 py-5 border-b border-white/5 flex items-center justify-between shrink-0 bg-black/20 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-accent/20 text-primary rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.3)] ring-1 ring-white/10">
-                <Compass className="w-6 h-6 animate-pulse" />
-              </div>
-              <div>
-                <h1 className="font-bold text-2xl tracking-tight text-white">SanYush <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">AI</span></h1>
-                <p className="text-[10px] text-white/50 font-bold tracking-[0.2em] uppercase mt-0.5">By Piyush & Sanuj</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <button onClick={() => setShowHistory(true)} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all shadow-sm">
-                <FolderOpen className="w-4 h-4" />
-              </button>
-              <button onClick={() => setShowChart(true)} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all shadow-sm">
-                <PieChartIcon className="w-4 h-4" />
-              </button>
-              <div className="w-px h-6 bg-white/10 mx-1" />
-              <button onClick={saveTrip} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all shadow-sm" title="Save Trip">
-                <Save className="w-4 h-4" />
-              </button>
-              <button onClick={handleDownload} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white transition-all shadow-sm" title="Download PDF">
-                <Download className="w-4 h-4" />
-              </button>
-              <button onClick={handleReset} className="p-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all shadow-sm" title="Reset">
-                <RotateCcw className="w-4 h-4" />
-              </button>
-            </div>
-          </header>
-
-          {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 chat-scrollbar">
-            <AnimatePresence initial={false}>
-              {messages.map((msg, idx) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                >
-                  <ChatMessage 
-                    message={msg} 
-                    onChipClick={(text) => handleSend(text)} 
-                  />
-                </motion.div>
-              ))}
-              {isTyping && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex"
-                >
-                  <TypingIndicator />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div ref={messagesEndRef} className="h-4" />
+      {/* ── Top Navigation Bar ── */}
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between z-20">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Compass className="w-5 h-5 text-primary" />
           </div>
+          <div>
+            <h1 className="text-base font-bold text-foreground tracking-tight leading-none">
+              SanYush <span className="text-gradient-warm">AI</span>
+            </h1>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mt-0.5">By Piyush & Sanuj</p>
+          </div>
+        </div>
 
-          {/* Quick Prompts */}
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => setShowHistory(true)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="History">
+            <Clock className="w-4 h-4" />
+          </button>
+          <button onClick={() => setShowChart(true)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Analytics">
+            <BarChart3 className="w-4 h-4" />
+          </button>
+          <div className="w-px h-5 bg-border mx-1" />
+          <button onClick={saveTrip} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Save">
+            <Save className="w-4 h-4" />
+          </button>
+          <button onClick={handleDownload} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Export PDF">
+            <Download className="w-4 h-4" />
+          </button>
+          <button onClick={handleReset} className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-400 transition-colors" title="Reset">
+            <RotateCcw className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main Content ── */}
+      <div className="flex-1 overflow-y-auto chat-scrollbar">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-10">
+
+          {/* Welcome state */}
           {messages.length <= 1 && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-              className="px-8 pb-4 flex flex-wrap gap-2 justify-center"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center py-16 md:py-24"
             >
-              {quickPrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => handleSend(prompt)}
-                  className="text-xs px-4 py-2 rounded-full glass-card hover:bg-white/10 text-white/80 hover:text-white transition-all hover:scale-105 active:scale-95"
-                >
-                  {prompt}
-                </button>
-              ))}
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                <Compass className="w-8 h-8 text-primary" />
+              </div>
+              <h2 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight mb-3">
+                Where to next?
+              </h2>
+              <p className="text-muted-foreground text-base md:text-lg max-w-md mx-auto leading-relaxed">
+                Plan complete trips with AI-powered budgets, itineraries, bookings, and local insights.
+              </p>
+              <div className="flex flex-wrap justify-center gap-2 mt-8">
+                {quickPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => handleSend(prompt)}
+                    className="text-sm px-5 py-2.5 rounded-full border border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all font-medium"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
 
-          {/* Floating Input Dock */}
-          <div className="p-4 md:p-6 shrink-0 bg-gradient-to-t from-black/60 to-transparent">
-            <div className="max-w-4xl mx-auto bg-black/40 backdrop-blur-2xl rounded-full p-2 flex items-center gap-2 border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary/50 transition-all">
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Where to next?..."
-                className="flex-1 bg-transparent text-white placeholder:text-white/40 rounded-full px-6 py-3 text-sm md:text-base outline-none"
-                disabled={isTyping}
-              />
-              <button
-                onClick={startListening}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${
-                  isListening ? "bg-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.6)] animate-pulse" : "bg-white/5 hover:bg-white/10 text-white"
-                }`}
-                title="Voice Input"
+          {/* Messages */}
+          <AnimatePresence initial={false}>
+            {messages.slice(messages.length <= 1 ? 0 : 0).map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
               >
-                <Mic className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isTyping}
-                className="w-12 h-12 rounded-full bg-primary hover:bg-primary/90 text-white flex items-center justify-center disabled:opacity-40 transition-all shrink-0 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
-              >
-                <Send className="w-5 h-5 ml-1" />
-              </button>
-            </div>
-          </div>
+                <ChatMessage message={msg} onChipClick={(text) => handleSend(text)} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
+          {isTyping && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <TypingIndicator />
+            </motion.div>
+          )}
+          <div ref={messagesEndRef} className="h-6" />
         </div>
       </div>
 
-      {/* Side Drawers */}
+      {/* ── Bottom Input Bar ── */}
+      <div className="shrink-0 border-t border-border bg-card/80 backdrop-blur-md px-4 py-3">
+        <div className="max-w-4xl mx-auto flex items-center gap-2">
+          <div className="flex-1 flex items-center bg-secondary rounded-xl px-4 py-2.5 gap-2 focus-within:ring-1 focus-within:ring-primary/30 transition-all">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about any destination, budget, or itinerary..."
+              className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm outline-none"
+              disabled={isTyping}
+            />
+            <button
+              onClick={startListening}
+              className={`p-1.5 rounded-lg transition-all ${isListening ? "bg-red-500 text-white animate-pulse" : "hover:bg-card text-muted-foreground hover:text-foreground"}`}
+              title="Voice"
+            >
+              <Mic className="w-4 h-4" />
+            </button>
+          </div>
+          <button
+            onClick={() => handleSend()}
+            disabled={!input.trim() || isTyping}
+            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-30 hover:opacity-90 transition-opacity shrink-0"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── History Drawer ── */}
       <AnimatePresence>
         {showHistory && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              onClick={() => setShowHistory(false)}
-              className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute left-0 top-0 bottom-0 w-80 glass-panel z-50 flex flex-col border-r border-white/10"
-            >
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <h2 className="font-bold text-xl text-white">Trip History</h2>
-                <button onClick={() => setShowHistory(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white">
-                  <X className="w-4 h-4" />
-                </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowHistory(false)} className="fixed inset-0 bg-black/50 z-40" />
+            <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed left-0 top-0 bottom-0 w-80 bg-card border-r border-border z-50 flex flex-col">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <h2 className="font-bold text-foreground">Trip History</h2>
+                <button onClick={() => setShowHistory(false)} className="p-1.5 hover:bg-secondary rounded-lg transition-colors"><X className="w-4 h-4 text-muted-foreground" /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 chat-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 space-y-2 chat-scrollbar">
                 {trips.length === 0 ? (
-                  <p className="text-sm text-white/50 text-center mt-10">No saved trips yet.</p>
+                  <p className="text-sm text-muted-foreground text-center mt-10">No saved trips.</p>
                 ) : (
                   trips.map(t => (
-                    <button
-                      key={t.id || t.name}
-                      onClick={() => loadTrip(t)}
-                      className="w-full text-left p-4 rounded-2xl glass-card hover:bg-white/10 transition-all text-sm group"
-                    >
-                      <div className="font-semibold text-white group-hover:text-primary transition-colors">{t.name}</div>
-                      <div className="text-[11px] text-white/40 mt-1 uppercase tracking-wider">
-                        {new Date(t.created_at).toLocaleDateString()}
-                      </div>
+                    <button key={t.id || t.name} onClick={() => loadTrip(t)} className="w-full text-left p-3 rounded-xl hover:bg-secondary transition-colors group">
+                      <div className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">{t.name}</div>
+                      <div className="text-[10px] text-muted-foreground mt-1">{new Date(t.created_at).toLocaleDateString()}</div>
                     </button>
                   ))
                 )}
@@ -478,62 +355,38 @@ const ChatInterface = () => {
             </motion.div>
           </>
         )}
+      </AnimatePresence>
 
+      {/* ── Analytics Drawer ── */}
+      <AnimatePresence>
         {showChart && (
           <>
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
-              onClick={() => setShowChart(false)}
-              className="absolute inset-0 bg-black/60 z-40 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 bottom-0 w-96 glass-panel z-50 flex flex-col border-l border-white/10"
-            >
-              <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <h2 className="font-bold text-xl text-white">Budget Chart</h2>
-                <button onClick={() => setShowChart(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white">
-                  <X className="w-4 h-4" />
-                </button>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowChart(false)} className="fixed inset-0 bg-black/50 z-40" />
+            <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="fixed right-0 top-0 bottom-0 w-96 bg-card border-l border-border z-50 flex flex-col">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <h2 className="font-bold text-foreground">Budget Analytics</h2>
+                <button onClick={() => setShowChart(false)} className="p-1.5 hover:bg-secondary rounded-lg transition-colors"><X className="w-4 h-4 text-muted-foreground" /></button>
               </div>
               <div className="flex-1 p-6 flex flex-col items-center justify-center">
                 {pieData.length === 0 ? (
-                  <p className="text-sm text-white/50 text-center">Generate a trip plan to see the budget breakdown.</p>
+                  <p className="text-sm text-muted-foreground text-center">Plan a trip to see analytics.</p>
                 ) : (
                   <>
                     <div className="w-full h-72">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={70}
-                            outerRadius={100}
-                            paddingAngle={5}
-                            dataKey="value"
-                            stroke="none"
-                          >
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={3} dataKey="value" stroke="none">
+                            {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                           </Pie>
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} 
-                            itemStyle={{ color: '#fff' }} 
-                            formatter={(value: number) => `₹${value.toLocaleString()}`} 
-                          />
-                          <Legend wrapperStyle={{ fontSize: '13px', color: '#fff' }} />
+                          <Tooltip contentStyle={{ backgroundColor: 'hsl(0 0% 7%)', border: '1px solid hsl(0 0% 14%)', borderRadius: '12px', color: '#fff', fontSize: '12px' }} formatter={(value: number) => `₹${value.toLocaleString()}`} />
+                          <Legend wrapperStyle={{ fontSize: '12px' }} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
                     {latestBudget && (
-                      <div className="mt-8 w-full glass-card p-6 rounded-3xl text-center">
-                        <div className="text-xs text-white/50 uppercase tracking-widest mb-1">Total Estimated</div>
-                        <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-                          ₹{latestBudget.total.toLocaleString()}
-                        </div>
+                      <div className="mt-6 w-full luxury-card rounded-xl p-5 text-center">
+                        <span className="label-xs block mb-1">Total Budget</span>
+                        <span className="text-3xl font-extrabold text-gradient-warm">₹{latestBudget.total.toLocaleString()}</span>
                       </div>
                     )}
                   </>
@@ -543,7 +396,6 @@ const ChatInterface = () => {
           </>
         )}
       </AnimatePresence>
-
     </div>
   );
 };

@@ -4,46 +4,40 @@
 
 @layer base {
   :root, .dark {
-    --background: 220 25% 4%;
-    --foreground: 210 20% 98%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 96%;
 
-    --card: 220 25% 10%;
-    --card-foreground: 210 20% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 220 25% 10%;
-    --popover-foreground: 210 20% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 210 100% 60%;
+    --primary: 30 60% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 15%;
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 96%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 50%;
 
-    --accent: 280 100% 65%;
+    --accent: 160 40% 45%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 20% 96%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 20%;
-    --input: 220 20% 20%;
-    --ring: 210 100% 60%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 30 60% 52%;
 
-    --radius: 1.5rem;
+    --radius: 1rem;
 
-    --chat-user: 210 100% 60%;
-    --chat-user-foreground: 0 0% 100%;
-    --chat-bot: 220 20% 15%;
-    --chat-bot-foreground: 210 20% 98%;
-    
-    --travel-gradient-start: 210 100% 60%;
-    --travel-gradient-end: 280 100% 65%;
-    --travel-warm: 16 80% 60%;
-    --travel-gold: 40 90% 55%;
-    --travel-green: 150 60% 45%;
+    --terracotta: 16 65% 55%;
+    --sage: 160 25% 50%;
+    --sand: 35 30% 70%;
+    --warm-white: 30 20% 95%;
   }
 }
 
@@ -53,32 +47,36 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Outfit', sans-serif;
-    overflow: hidden; /* Important for full-screen floating UI */
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
-  .glass-panel {
-    @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.4)];
-  }
-  
-  .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-lg;
+  .luxury-card {
+    @apply bg-card border border-border/60 shadow-sm;
   }
 
-  .travel-gradient {
-    background: linear-gradient(135deg, hsl(var(--travel-gradient-start)), hsl(var(--travel-gradient-end)));
+  .luxury-card-hover {
+    @apply bg-card border border-border/60 shadow-sm hover:border-border hover:shadow-md transition-all duration-300;
   }
-  
-  .text-gradient {
-    background: linear-gradient(135deg, hsl(var(--travel-gradient-start)), hsl(var(--travel-gradient-end)));
+
+  .text-gradient-warm {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--terracotta)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  
+
+  .text-gradient-sage {
+    background: linear-gradient(135deg, hsl(var(--sage)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
   .chat-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 3px;
   }
   .chat-scrollbar::-webkit-scrollbar-track {
     background: transparent;
@@ -87,13 +85,17 @@
     background: hsl(var(--border));
     border-radius: 4px;
   }
-  
+
   .typing-dot {
     animation: typingBounce 1.4s infinite ease-in-out both;
   }
   .typing-dot:nth-child(1) { animation-delay: -0.32s; }
   .typing-dot:nth-child(2) { animation-delay: -0.16s; }
   .typing-dot:nth-child(3) { animation-delay: 0s; }
+
+  .label-xs {
+    @apply text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground;
+  }
 }
 
 @keyframes typingBounce {
