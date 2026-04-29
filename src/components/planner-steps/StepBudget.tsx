@@ -56,11 +56,11 @@ export default function StepBudget({ state, updateState, onNext }: Props) {
               onClick={() => {
                 setVal(p.val);
               }}
-              className={\`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all \${
+              className={`p-4 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all \${
                 Math.abs(val - p.val) < 15000
                   ? "border-primary bg-primary/10 text-primary" 
                   : "border-border bg-card/50 text-foreground hover:border-primary/50 hover:bg-secondary/80"
-              }\`}
+              }`}
             >
               <span className="font-bold">{p.label}</span>
               <span className="text-xs opacity-70 font-medium">{p.desc}</span>

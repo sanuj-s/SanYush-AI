@@ -35,9 +35,9 @@ export default function OutputScreen({ state, onReset }: Props) {
         throw new Error("Missing VITE_GEMINI_API_KEY in environment variables.");
       }
 
-      const destText = state.destinationMode === "known" ? \`Destination: \${state.destination}\` : "Destination: Please suggest a destination based on budget and preferences.";
+      const destText = state.destinationMode === "known" ? `Destination: \${state.destination}` : "Destination: Please suggest a destination based on budget and preferences.";
 
-      const prompt = \`
+      const prompt = `
 You are a master travel planner. I need a highly structured JSON plan based on the following exact constraints.
 DO NOT output any markdown blocks, only pure JSON.
 
@@ -73,9 +73,9 @@ Output EXACTLY this JSON structure:
     }
   ]
 }
-\`;
+`;
 
-      const res = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}\`, {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=\${apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

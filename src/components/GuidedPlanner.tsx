@@ -104,7 +104,7 @@ export default function GuidedPlanner() {
           <motion.div 
             className="h-full bg-primary"
             initial={{ width: 0 }}
-            animate={{ width: \`\${((currentStepIndex) / (steps.length - 2)) * 100}%\` }}
+            animate={{ width: `\${((currentStepIndex) / (steps.length - 2)) * 100}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>

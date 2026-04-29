@@ -28,13 +28,13 @@ export default function StepStyle({ state, updateState, onNext }: Props) {
               updateState({ style: id });
               setTimeout(onNext, 150);
             }}
-            className={\`p-5 rounded-2xl border-2 flex items-start gap-4 transition-all text-left \${
+            className={`p-5 rounded-2xl border-2 flex items-start gap-4 transition-all text-left \${
               state.style === id 
                 ? "border-primary bg-primary/10 text-primary scale-[1.02]" 
                 : "border-border bg-card/50 text-foreground hover:border-primary/50 hover:bg-secondary/80"
-            }\`}
+            }`}
           >
-            <div className={\`p-3 rounded-xl shrink-0 \${state.style === id ? "bg-primary/20" : "bg-secondary"}\`}>
+            <div className={`p-3 rounded-xl shrink-0 \${state.style === id ? "bg-primary/20" : "bg-secondary"}`}>
               <Icon className="w-6 h-6" />
             </div>
             <div>

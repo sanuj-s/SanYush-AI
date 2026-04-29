@@ -29,11 +29,11 @@ export default function StepTravelers({ state, updateState, onNext }: Props) {
               updateState({ travelers: id });
               setTimeout(onNext, 150);
             }}
-            className={\`p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all \${
+            className={`p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all \${
               state.travelers === id 
                 ? "border-primary bg-primary/10 text-primary scale-[1.02]" 
                 : "border-border bg-card/50 text-foreground hover:border-primary/50 hover:bg-secondary/80"
-            }\`}
+            }`}
           >
             <Icon className="w-8 h-8" />
             <span className="font-bold text-lg">{label}</span>
