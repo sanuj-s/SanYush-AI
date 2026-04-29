@@ -70,6 +70,15 @@ const ChatInterface = () => {
       content: m.content,
     }));
 
+    // OVERRIDE: Since we cannot update the remote Edge Function, we inject the strict formatting 
+    // rules into the user's latest message to force the AI to stop writing massive paragraphs.
+    if (payload.length > 0 && payload[payload.length - 1].role === "user") {
+      payload[payload.length - 1].content += `\n\n***CRITICAL SYSTEM INSTRUCTION FOR THIS TURN***:
+1. DO NOT write paragraphs! Keep your text response EXTREMELY SHORT (Maximum 3-5 lines total).
+2. DO NOT write day-by-day descriptions, tips, or budget breakdowns in the text.
+3. You MUST ONLY provide a 2-line greeting/fun fact, 1-2 bullet points of tips, and then IMMEDIATELY output the \`\`\`json block. The UI will render the visual cards using the JSON. Never repeat the JSON data in the text!`;
+    }
+
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {

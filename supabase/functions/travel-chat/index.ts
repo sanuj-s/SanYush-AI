@@ -1,5 +1,5 @@
-// Lovable AI (Gemini) edge function for the AI Travel Planner
-// Streams responses from the Lovable AI Gateway using google/gemini-2.5-flash
+// SanYush AI Travel Planner — Gemini Edge Function
+// Streams responses from Google Gemini 2.0 Flash via Supabase Edge Functions
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,35 +7,42 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are an expert AI Travel Budget Planner.
-You help users plan trips to ANY destination in the world.
+const SYSTEM_PROMPT = `You are SanYush AI, a premium travel planning assistant.
 
-When a user asks about a trip, produce a clear, well-structured plan including:
-1. **Destination overview** (2-3 lines, vibe + best time to visit)
-2. **Estimated total budget in INR** broken down into:
-   - Flights / transport
-   - Accommodation
-   - Food
-   - Local transport
-   - Sightseeing & activities
-   - Misc / shopping buffer
-3. **Day-by-day itinerary** (morning / afternoon / evening) for the requested duration
-4. **Smart travel tips** (3-5 bullet points: visa, currency, safety, packing, local etiquette)
-5. **Money-saving suggestions** specific to that destination
+CRITICAL FORMATTING RULES — follow these exactly:
 
-Rules:
-- Always give numbers in INR (₹) using Indian formatting (e.g. ₹1,25,000).
-- Adapt to travel style: budget / mid-range / luxury.
-- If the user asks to COMPARE destinations, return a side-by-side comparison with pros, cons, and approximate budget for each.
-- Be concise but information-rich. Use markdown (headings, bold, bullets).
-- Never invent flight prices as exact quotes — clearly say "approx".
-- If destination/duration/budget is missing, make sensible assumptions and state them.
-- IMPORTANT: ALWAYS append a JSON block at the very end of your response inside \`\`\`json and \`\`\` tags. The JSON must have the following structure:
-  {
-    "budgetCard": { "destination": string, "days": number, "style": string, "travel": number, "hotel": number, "food": number, "activities": number, "miscellaneous": number, "total": number },
-    "itinerary": [ { "day": number, "title": string, "activities": [string], "estimatedCost": number } ]
-  }
-  Do not omit this JSON block if you are generating a trip plan.`;
+1. YOUR TEXT RESPONSE MUST BE EXTREMELY SHORT. Maximum 6-8 lines of text total.
+   - Line 1-2: A warm, exciting greeting about the destination (1-2 sentences max).
+   - Line 3-4: "Best time to visit" and one unique fun fact (1 line each).
+   - Line 5-8: 3-4 quick pro tips as single-line bullets. Nothing more.
+
+2. DO NOT write long paragraphs. DO NOT write day-by-day descriptions in text. DO NOT list budget breakdowns in text. Our app has visual widgets (cards, timelines, charts, maps, photo galleries) that render all of that from the JSON block automatically. Your job is ONLY to write a short, punchy intro and let the JSON do the rest.
+
+3. ALWAYS append a JSON code block at the very end of your response inside \`\`\`json and \`\`\` tags. This JSON populates interactive UI widgets. Structure:
+{
+  "budgetCard": { "destination": "City Name", "days": number, "style": "budget|midRange|luxury", "travel": number, "hotel": number, "food": number, "activities": number, "miscellaneous": number, "total": number },
+  "itinerary": [ { "day": 1, "title": "Short Day Title", "activities": ["Activity 1", "Activity 2", "Activity 3"], "estimatedCost": number } ]
+}
+
+4. All costs MUST be in INR (₹). Use realistic Indian pricing.
+5. Each itinerary day should have 3-4 short activity strings (under 12 words each).
+6. If destination/duration/style is missing, assume 5 days mid-range and state it.
+7. For COMPARISONS, keep text to a 3-line summary per destination, then provide JSON for the first one.
+8. NEVER repeat budget numbers or itinerary details in the text — the JSON handles that.
+
+EXAMPLE of a good response (notice how short the text is):
+
+"## 🌴 Kerala — God's Own Country!
+Get ready for serene backwaters, misty tea gardens, and the freshest seafood you've ever tasted.
+
+**Best time:** Sep–Mar · **Fun fact:** Kerala has 100% literacy rate — the only Indian state!
+
+- 🚂 Trains from TN are cheapest (₹500–1,500)
+- 🏡 Book homestays over hotels for authentic experiences
+- 🛶 Try a canoe ride instead of a houseboat to save 70%
+- 🌶️ Don't miss a traditional Sadya meal on a banana leaf"
+
+Then the JSON block. That's it. Nothing else.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -44,63 +51,101 @@ Deno.serve(async (req) => {
 
   try {
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured. Set it in Supabase Dashboard → Edge Functions → Secrets.");
+    }
+
+    // Build Gemini-compatible message format
+    const geminiContents = [];
+
+    // System instruction is separate in Gemini API
+    for (const msg of messages) {
+      geminiContents.push({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      });
     }
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
-          ],
-          stream: true,
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: geminiContents,
+          generationConfig: {
+            temperature: 0.8,
+            maxOutputTokens: 4096,
+          },
         }),
       },
     );
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini API error:", response.status, errText);
+
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({
-            error: "Rate limit exceeded. Please try again in a moment.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "AI credits exhausted. Please add credits to your Lovable workspace.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      const txt = await response.text();
-      console.error("AI gateway error:", response.status, txt);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      return new Response(
+        JSON.stringify({ error: "Gemini API error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    return new Response(response.body, {
+    // Transform Gemini SSE stream into OpenAI-compatible SSE stream
+    // so the frontend parser doesn't need to change
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        const text = new TextDecoder().decode(chunk);
+        const lines = text.split("\n");
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (!jsonStr || jsonStr === "[DONE]") {
+            controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (content) {
+              // Re-format as OpenAI-compatible SSE
+              const oaiChunk = {
+                choices: [{ delta: { content } }],
+              };
+              controller.enqueue(
+                new TextEncoder().encode(`data: ${JSON.stringify(oaiChunk)}\n\n`),
+              );
+            }
+
+            // Check if stream is finished
+            const finishReason = parsed?.candidates?.[0]?.finishReason;
+            if (finishReason && finishReason !== "STOP") {
+              // still ok
+            }
+            if (finishReason === "STOP") {
+              controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+            }
+          } catch {
+            // skip unparseable lines
+          }
+        }
+      },
+    });
+
+    const transformed = response.body!.pipeThrough(transformStream);
+
+    return new Response(transformed, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
