@@ -29,7 +29,13 @@ Rules:
 - If the user asks to COMPARE destinations, return a side-by-side comparison with pros, cons, and approximate budget for each.
 - Be concise but information-rich. Use markdown (headings, bold, bullets).
 - Never invent flight prices as exact quotes — clearly say "approx".
-- If destination/duration/budget is missing, make sensible assumptions and state them.`;
+- If destination/duration/budget is missing, make sensible assumptions and state them.
+- IMPORTANT: ALWAYS append a JSON block at the very end of your response inside \`\`\`json and \`\`\` tags. The JSON must have the following structure:
+  {
+    "budgetCard": { "destination": string, "days": number, "style": string, "travel": number, "hotel": number, "food": number, "activities": number, "miscellaneous": number, "total": number },
+    "itinerary": [ { "day": number, "title": string, "activities": [string], "estimatedCost": number } ]
+  }
+  Do not omit this JSON block if you are generating a trip plan.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
