@@ -53,7 +53,7 @@ export default function GuidedPlanner() {
   const currentStepId = steps[currentStepIndex];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col text-foreground overflow-hidden">
+    <div className="h-screen bg-background flex flex-col text-foreground overflow-hidden">
       {/* Header */}
       <header className="shrink-0 px-6 py-4 flex items-center justify-between z-20 border-b border-border bg-card/50 backdrop-blur-md">
         <div className="flex items-center gap-4">
@@ -83,7 +83,7 @@ export default function GuidedPlanner() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className={\`w-full max-w-2xl mx-auto px-6 py-8 min-h-full flex flex-col \${currentStepId === "OUTPUT" ? "justify-start" : "justify-center"}\`}
+            className={`w-full max-w-2xl mx-auto px-6 py-8 min-h-full flex flex-col ${currentStepId === "OUTPUT" ? "justify-start" : "justify-center"}`}
           >
             {currentStepId === "INTENT" && <StepIntent state={state} updateState={updateState} onNext={nextStep} />}
             {currentStepId === "DESTINATION" && <StepDestination state={state} updateState={updateState} onNext={nextStep} />}

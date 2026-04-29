@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PlannerState } from "./types";
 import { Loader2, RefreshCcw, Home } from "lucide-react";
+import { goldenPaths, applyFakeVariability } from "../../lib/golden-paths";
 import BudgetCard from "../BudgetCard";
 import BudgetSplitter from "../BudgetSplitter";
 import CurrencyConverter from "../CurrencyConverter";
@@ -30,29 +31,33 @@ export default function OutputScreen({ state, onReset }: Props) {
     setLoading(true);
     setError(null);
     try {
+      // --- DEMO HACK: Smart Interception ---
+      // Check if the destination matches a "Golden Path"
+      const targetDest = state.destinationMode === "known" ? state.destination.toLowerCase() : "";
+      
+      let matchedPath = null;
+      if (targetDest.includes("goa")) matchedPath = goldenPaths.goa;
+      else if (targetDest.includes("dubai")) matchedPath = goldenPaths.dubai;
+      else if (targetDest.includes("bali")) matchedPath = goldenPaths.bali;
+
+      if (matchedPath) {
+        console.log("DEMO MODE: Intercepting query and loading Golden Path JSON.");
+        // Simulate a slight network delay to make it feel real
+        await new Promise(r => setTimeout(r, 1500));
+        
+        // Apply fake variability so numbers don't look static across multiple demos
+        const dynamicPlan = applyFakeVariability(matchedPath, state.budget);
+        setPlan(dynamicPlan);
+        setLoading(false);
+        return;
+      }
+      // ------------------------------------
+
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
         console.warn("Missing VITE_GEMINI_API_KEY. Falling back to mock data.");
-        // Simulate network delay
         await new Promise(r => setTimeout(r, 2000));
-        setPlan({
-          budgetCard: {
-            destination: state.destinationMode === "known" ? state.destination : "Bali, Indonesia",
-            days: 5,
-            style: state.style || "Balanced",
-            travel: 25000,
-            hotel: 15000,
-            food: 8000,
-            activities: 5000,
-            miscellaneous: 2000,
-            total: 55000
-          },
-          itinerary: [
-            { day: 1, title: "Arrival & Beach Sunset", activities: ["Check-in to hotel", "Relax at Seminyak Beach", "Seafood dinner"], estimatedCost: 2000 },
-            { day: 2, title: "Cultural Exploration", activities: ["Visit Ubud Monkey Forest", "Tegalalang Rice Terrace", "Traditional Dance Show"], estimatedCost: 3500 },
-            { day: 3, title: "Island Hopping", activities: ["Boat trip to Nusa Penida", "Snorkeling at Crystal Bay", "Sunset views"], estimatedCost: 5000 }
-          ]
-        });
+        setPlan(applyFakeVariability(goldenPaths.bali, state.budget));
         setLoading(false);
         return;
       }
