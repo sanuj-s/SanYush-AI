@@ -25,6 +25,8 @@ const ChatInterface = () => {
   const [trips, setTrips] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add("dark");
@@ -49,12 +51,13 @@ const ChatInterface = () => {
   useEffect(() => { fetchTrips(); }, []);
 
   const saveTrip = async () => {
-    const name = prompt("Name this trip:");
-    if (!name) return;
+    if (!saveName.trim()) return;
     try {
-      await supabase.from('trips').insert([{ name, history: messages }]);
+      await supabase.from('trips').insert([{ name: saveName.trim(), history: messages }]);
+      setSaveName("");
+      setShowSaveModal(false);
       fetchTrips();
-    } catch (e) { console.error(e); alert("Failed to save trip."); }
+    } catch (e) { console.error(e); }
   };
 
   const loadTrip = (trip: any) => {
@@ -70,13 +73,10 @@ const ChatInterface = () => {
       content: m.content,
     }));
 
-    // OVERRIDE: Since we cannot update the remote Edge Function, we inject the strict formatting 
-    // rules into the user's latest message to force the AI to stop writing massive paragraphs.
+    // Inject formatting instructions as a system-level prefix (clean, non-polluting)
+    const systemNote = `\n\n[SYSTEM: Respond concisely. Max 3-5 lines of text. Output a single \`\`\`json block for any plan data. Do NOT repeat plan data in text.]`;
     if (payload.length > 0 && payload[payload.length - 1].role === "user") {
-      payload[payload.length - 1].content += `\n\n***CRITICAL SYSTEM INSTRUCTION FOR THIS TURN***:
-1. DO NOT write paragraphs! Keep your text response EXTREMELY SHORT (Maximum 3-5 lines total).
-2. DO NOT write day-by-day descriptions, tips, or budget breakdowns in the text.
-3. You MUST ONLY provide a 2-line greeting/fun fact, 1-2 bullet points of tips, and then IMMEDIATELY output the \`\`\`json block. The UI will render the visual cards using the JSON. Never repeat the JSON data in the text!`;
+      payload[payload.length - 1].content += systemNote;
     }
 
     const resp = await fetch(CHAT_URL, {
@@ -238,7 +238,7 @@ const ChatInterface = () => {
             <BarChart3 className="w-4 h-4" />
           </button>
           <div className="w-px h-5 bg-border mx-1" />
-          <button onClick={saveTrip} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Save">
+          <button onClick={() => setShowSaveModal(true)} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Save">
             <Save className="w-4 h-4" />
           </button>
           <button onClick={handleDownload} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Export PDF">
@@ -400,6 +400,38 @@ const ChatInterface = () => {
                     )}
                   </>
                 )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Save Trip Modal ── */}
+      <AnimatePresence>
+        {showSaveModal && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowSaveModal(false)} className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }} transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 bg-card border border-border rounded-2xl p-6 z-50 shadow-2xl">
+              <h3 className="font-bold text-foreground text-base mb-1">Save this trip</h3>
+              <p className="text-sm text-muted-foreground mb-4">Give this plan a name to find it later.</p>
+              <input
+                autoFocus
+                value={saveName}
+                onChange={e => setSaveName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && saveTrip()}
+                placeholder="e.g. Goa trip July 2025"
+                className="w-full bg-secondary text-foreground text-sm px-4 py-2.5 rounded-xl outline-none border border-border focus:border-primary/50 transition-all mb-3"
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowSaveModal(false)} className="flex-1 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">
+                  Cancel
+                </button>
+                <button onClick={saveTrip} disabled={!saveName.trim()} className="flex-1 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40">
+                  Save
+                </button>
               </div>
             </motion.div>
           </>

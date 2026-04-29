@@ -28,7 +28,9 @@ export default function MapView({ destination }: MapViewProps) {
     async function fetchLocation() {
       try {
         setLoading(true);
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destination)}`, {
+          headers: { "User-Agent": "SanYushAI/1.0 (travel-planner-demo)" }
+        });
         const data = await res.json();
         if (data && data.length > 0) {
           setPosition([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
@@ -50,7 +52,7 @@ export default function MapView({ destination }: MapViewProps) {
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 mt-2 shadow-sm animate-fade-in-up">
-      <h3 className="fontsemibold text-card-foreground mb-3 flex items-center gap-2">
+      <h3 className="font-semibold text-card-foreground mb-3 flex items-center gap-2">
         <MapIcon className="w-4 h-4 text-travel-green" />
         Map: {destination}
       </h3>

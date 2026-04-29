@@ -1,7 +1,7 @@
-import ConversationalPlanner from "@/components/ConversationalPlanner";
+import ChatInterface from "@/components/ChatInterface";
 
 const Index = () => {
-  return <ConversationalPlanner />;
+  return <ChatInterface />;
 };
 
 export default Index;

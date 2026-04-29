@@ -66,7 +66,7 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
       {dest && (
         <div className="relative rounded-2xl overflow-hidden mb-6 group">
           <img
-            src={`https://source.unsplash.com/1200x400/?travel,${encodeURIComponent(dest)}`}
+            src={`https://loremflickr.com/1200/400/${encodeURIComponent(dest)}?random=${dest.length}`}
             alt={dest}
             className="w-full h-48 md:h-56 object-cover group-hover:scale-[1.02] transition-transform duration-1000"
           />
