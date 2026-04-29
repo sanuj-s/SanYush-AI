@@ -11,12 +11,12 @@ export default function PhotoGallery({ destination }: PhotoGalleryProps) {
 
   // We generate multiple unique image URLs by appending different query params
   const images = [
-    `https://source.unsplash.com/600x400/?${encoded},travel,landmark&sig=1`,
-    `https://source.unsplash.com/600x400/?${encoded},travel,street&sig=2`,
-    `https://source.unsplash.com/600x400/?${encoded},travel,food&sig=3`,
-    `https://source.unsplash.com/600x400/?${encoded},travel,nature&sig=4`,
-    `https://source.unsplash.com/600x400/?${encoded},travel,architecture&sig=5`,
-    `https://source.unsplash.com/600x400/?${encoded},travel,culture&sig=6`,
+    `https://loremflickr.com/600/400/${encoded},landmark?random=1`,
+    `https://loremflickr.com/600/400/${encoded},street?random=2`,
+    `https://loremflickr.com/600/400/${encoded},food?random=3`,
+    `https://loremflickr.com/600/400/${encoded},nature?random=4`,
+    `https://loremflickr.com/600/400/${encoded},architecture?random=5`,
+    `https://loremflickr.com/600/400/${encoded},culture?random=6`,
   ];
 
   const [loaded, setLoaded] = useState<boolean[]>(new Array(images.length).fill(false));
