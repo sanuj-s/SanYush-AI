@@ -1,5 +1,6 @@
 import { PlannerState } from "./types";
 import { User, Users, UsersRound, Baby } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface Props {
   state: PlannerState;
@@ -15,31 +16,38 @@ const options = [
 ];
 
 export default function StepTravelers({ state, updateState, onNext }: Props) {
-  // If intent was Solo, we might have skipped this, but just in case it renders
   return (
     <div className="w-full">
-      <h2 className="text-3xl font-extrabold mb-2">Who's going?</h2>
-      <p className="text-muted-foreground mb-8 text-lg">Select your travel companions.</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <h2 className="text-4xl font-extrabold mb-3 tracking-tight">Who's going?</h2>
+        <p className="text-muted-foreground mb-10 text-lg">Select your travel companions.</p>
+      </motion.div>
       
       <div className="grid grid-cols-2 gap-4">
-        {options.map(({ id, label, desc, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => {
-              updateState({ travelers: id });
-              setTimeout(onNext, 150);
-            }}
-            className={`p-6 rounded-2xl border-2 flex flex-col items-center justify-center gap-3 transition-all \${
-              state.travelers === id 
-                ? "border-primary bg-primary/10 text-primary scale-[1.02]" 
-                : "border-border bg-card/50 text-foreground hover:border-primary/50 hover:bg-secondary/80"
-            }`}
-          >
-            <Icon className="w-8 h-8" />
-            <span className="font-bold text-lg">{label}</span>
-            <span className="text-xs opacity-70 font-medium text-center">{desc}</span>
-          </button>
-        ))}
+        {options.map(({ id, label, desc, icon: Icon }, i) => {
+          const isSelected = state.travelers === id;
+          return (
+            <motion.button
+              key={id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 + i * 0.05 }}
+              onClick={() => {
+                updateState({ travelers: id });
+                setTimeout(onNext, 300);
+              }}
+              className={`step-card p-6 flex flex-col items-center text-center gap-4 \${isSelected ? 'step-card-selected' : ''}`}
+            >
+              <div className={`p-4 rounded-full transition-colors \${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+                <Icon className="w-8 h-8" />
+              </div>
+              <div>
+                <div className={`font-bold text-xl mb-1 transition-colors \${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
+                <div className="text-sm text-muted-foreground font-medium">{desc}</div>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );

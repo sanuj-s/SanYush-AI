@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { PlannerState } from "./types";
-import { Loader2, RefreshCcw, Home } from "lucide-react";
+import { Loader2, RefreshCcw, Home, Download, Settings, Map as MapIcon, Calendar as CalendarIcon, Wallet as WalletIcon, BaggageClaim } from "lucide-react";
 import { goldenPaths, applyFakeVariability } from "../../lib/golden-paths";
+import { motion, AnimatePresence } from "framer-motion";
 import BudgetCard from "../BudgetCard";
 import BudgetSplitter from "../BudgetSplitter";
 import CurrencyConverter from "../CurrencyConverter";
@@ -27,6 +28,7 @@ export default function OutputScreen({ state, onReset }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<any | null>(null);
   const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     if (state.destinationMode === "known") {
@@ -60,8 +62,7 @@ export default function OutputScreen({ state, onReset }: Props) {
       // ------------------------------------
 
       // --- DETERMINISTIC ENGINE FALLBACK ---
-      // Instead of an LLM, use the programmatic PlanningEngine for a deterministic guarantee
-      await new Promise(r => setTimeout(r, 1200)); // Simulate thinking
+      await new Promise(r => setTimeout(r, 1200)); 
       const generatedPlan = PlanningEngine.run(state, targetDestString);
       setPlan(generatedPlan);
     } catch (e: any) {
@@ -78,14 +79,14 @@ export default function OutputScreen({ state, onReset }: Props) {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full space-y-6">
-        <div className="relative w-24 h-24 flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center h-full space-y-6 pt-20">
+        <div className="relative w-32 h-32 flex items-center justify-center">
           <div className="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
           <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <Loader2 className="w-8 h-8 text-primary animate-pulse" />
+          <Loader2 className="w-10 h-10 text-primary animate-pulse" />
         </div>
         <div className="text-center">
-          <h3 className="text-xl font-bold text-foreground">Crafting your perfect trip...</h3>
+          <h3 className="text-2xl font-bold text-foreground">Crafting your perfect trip...</h3>
           <p className="text-muted-foreground mt-2 max-w-sm mx-auto">
             Analyzing {state.destinationMode === "known" ? state.destination : "destinations"} for {state.travelers} within ₹{state.budget.toLocaleString("en-IN")}.
           </p>
@@ -96,14 +97,14 @@ export default function OutputScreen({ state, onReset }: Props) {
 
   if (error) {
     return (
-      <div className="text-center space-y-6">
-        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
-          <span className="text-2xl">⚠️</span>
+      <div className="text-center space-y-6 pt-20">
+        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center mx-auto text-destructive">
+          <RefreshCcw className="w-10 h-10" />
         </div>
-        <h3 className="text-xl font-bold">Plan Generation Failed</h3>
+        <h3 className="text-2xl font-bold">Plan Generation Failed</h3>
         <p className="text-muted-foreground max-w-sm mx-auto">{error}</p>
-        <button onClick={generatePlan} className="bg-primary text-primary-foreground px-6 py-3 rounded-full font-bold flex items-center gap-2 mx-auto">
-          <RefreshCcw className="w-4 h-4" /> Try Again
+        <button onClick={() => generatePlan(state.destination)} className="bg-primary text-primary-foreground px-8 py-4 rounded-full font-bold flex items-center gap-2 mx-auto hover:opacity-90 transition-opacity">
+          <RefreshCcw className="w-5 h-5" /> Try Again
         </button>
       </div>
     );
@@ -113,10 +114,10 @@ export default function OutputScreen({ state, onReset }: Props) {
 
   const handleSimulate = async (type: string) => {
     setLoading(true);
-    await new Promise(r => setTimeout(r, 800)); // Fast recalculation feel
+    await new Promise(r => setTimeout(r, 800)); 
     
     setPlan((prev: any) => {
-      const p = JSON.parse(JSON.stringify(prev)); // Deep copy
+      const p = JSON.parse(JSON.stringify(prev));
       if (!p?.budgetCard) return p;
 
       if (type === "add_budget") {
@@ -143,68 +144,129 @@ export default function OutputScreen({ state, onReset }: Props) {
     setLoading(false);
   };
 
+  const tabs = [
+    { id: "overview", label: "Overview", icon: Home },
+    { id: "itinerary", label: "Itinerary", icon: CalendarIcon },
+    { id: "budget", label: "Budget & Booking", icon: WalletIcon },
+    { id: "map", label: "Map & Weather", icon: MapIcon },
+    { id: "packing", label: "Packing List", icon: BaggageClaim },
+  ];
+
   return (
     <div className="w-full pb-20">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-extrabold text-foreground">Your Plan is Ready!</h2>
-          <p className="text-muted-foreground">Tailored for {state.intent} in {dest}.</p>
-        </div>
-        <button onClick={onReset} className="p-3 bg-secondary rounded-full hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground" title="Start Over">
-          <Home className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 mb-8">
-        <button onClick={() => handleSimulate("add_days")} className="px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg border border-primary/20 hover:bg-primary/20 transition-all text-sm flex items-center gap-2">
-          ⏳ Change Duration
-        </button>
-        <button onClick={() => handleSimulate("upgrade_luxury")} className="px-4 py-2 bg-secondary text-foreground font-bold rounded-lg hover:bg-secondary/80 transition-all text-sm flex items-center gap-2">
-          ⚙️ Optimize Budget
-        </button>
-        <button onClick={onReset} className="px-4 py-2 border border-border text-muted-foreground font-bold rounded-lg hover:bg-secondary hover:text-foreground transition-all text-sm flex items-center gap-2 ml-auto">
-          <RefreshCcw className="w-3 h-3" /> Regenerate
-        </button>
-      </div>
-
-      <div className="space-y-8">
-        {/* Budget Row */}
-        {plan?.budgetCard && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <BudgetCard budget={plan.budgetCard} />
-            <BudgetSplitter budget={plan.budgetCard} />
-            <CurrencyConverter amountInr={plan.budgetCard.total} />
+      
+      {/* ── Hero Section ── */}
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary rounded-full text-xs font-bold text-primary mb-4">
+              ✨ PLAN READY
+            </div>
+            <h2 className="text-4xl md:text-6xl font-extrabold text-foreground tracking-tight leading-tight mb-2">
+              <span className="text-gradient-warm">{dest}</span>
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              Tailored {state.intent} plan for {state.travelers} · {plan?.budgetCard?.days} days
+            </p>
           </div>
-        )}
+          
+          <div className="flex gap-2">
+            <button onClick={onReset} className="p-3 bg-secondary rounded-xl hover:bg-secondary/80 transition-colors text-muted-foreground hover:text-foreground" title="Start Over">
+              <Home className="w-5 h-5" />
+            </button>
+            <button className="p-3 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-opacity" title="Export PDF">
+              <Download className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
-        <ExplainabilityWidget state={state} plan={plan} />
-
-        {/* Itinerary Timeline */}
-        {plan?.itinerary && (
-          <TimelineItinerary itinerary={plan.itinerary} />
-        )}
-
-        {/* Destination widgets */}
-        {dest && (
-          <>
-            <PhotoGallery destination={dest} />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <CultureWidget destination={dest} />
-              <BookingLinks destination={dest} />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <WeatherWidget destination={dest} />
-              <MapView destination={dest} />
-            </div>
-
-            <PackingList destination={dest} />
-          </>
-        )}
-
-        <ScenarioSimulator onSimulate={handleSimulate} />
+      {/* ── Tabs Navigation ── */}
+      <div className="flex overflow-x-auto chat-scrollbar gap-1 border-b border-border mb-8 pb-px">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm transition-all whitespace-nowrap \${isActive ? 'tab-active' : 'tab-inactive'}`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
+
+      {/* ── Tab Content ── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+        >
+          
+          {/* Overview Tab */}
+          {activeTab === "overview" && (
+            <div className="space-y-8">
+              {dest && <PhotoGallery destination={dest} />}
+              
+              <ExplainabilityWidget state={state} plan={plan} />
+              
+              <div className="flex items-center justify-between p-6 bg-card border border-border rounded-2xl">
+                <div>
+                  <h3 className="font-bold text-foreground text-lg mb-1">Want to tweak the parameters?</h3>
+                  <p className="text-sm text-muted-foreground">Adjust duration, style, or budget to see how it affects the plan.</p>
+                </div>
+                <button onClick={onReset} className="px-5 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-xl flex items-center gap-2 transition-colors">
+                  <Settings className="w-4 h-4" /> Refine Plan
+                </button>
+              </div>
+
+              <ScenarioSimulator onSimulate={handleSimulate} />
+            </div>
+          )}
+
+          {/* Itinerary Tab */}
+          {activeTab === "itinerary" && plan?.itinerary && (
+            <div className="space-y-6">
+              <TimelineItinerary itinerary={plan.itinerary} />
+            </div>
+          )}
+
+          {/* Budget Tab */}
+          {activeTab === "budget" && plan?.budgetCard && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <BudgetCard budget={plan.budgetCard} />
+                <BudgetSplitter budget={plan.budgetCard} />
+                <CurrencyConverter amountInr={plan.budgetCard.total} />
+              </div>
+              
+              {dest && <BookingLinks destination={dest} />}
+            </div>
+          )}
+
+          {/* Map Tab */}
+          {activeTab === "map" && dest && (
+            <div className="space-y-8">
+              <MapView destination={dest} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <WeatherWidget destination={dest} />
+                <CultureWidget destination={dest} />
+              </div>
+            </div>
+          )}
+
+          {/* Packing Tab */}
+          {activeTab === "packing" && dest && (
+            <PackingList destination={dest} />
+          )}
+
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

@@ -67,69 +67,88 @@ const ChatInterface = () => {
   };
 
   const streamFromGemini = async (history: Message[]) => {
-    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/travel-chat`;
-    const payload = history.map((m) => ({
-      role: m.role === "user" ? "user" : "assistant",
-      content: m.content,
+    const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) throw new Error("VITE_GEMINI_API_KEY is not set in .env");
+
+    const SYSTEM_PROMPT = `You are SanYush AI, a premium travel planning assistant.
+
+CRITICAL FORMATTING RULES — follow these exactly:
+1. YOUR TEXT RESPONSE MUST BE EXTREMELY SHORT. Maximum 6-8 lines of text total.
+   - Line 1-2: A warm, exciting greeting about the destination (1-2 sentences max).
+   - Line 3-4: "Best time to visit" and one unique fun fact (1 line each).
+   - Line 5-8: 3-4 quick pro tips as single-line bullets. Nothing more.
+2. DO NOT write long paragraphs. DO NOT write day-by-day descriptions in text. DO NOT list budget breakdowns in text.
+3. ALWAYS append a JSON code block at the very end inside \`\`\`json and \`\`\` tags:
+{
+  "budgetCard": { "destination": "City", "days": number, "style": "Budget|Balanced|Luxury", "travel": number, "hotel": number, "food": number, "activities": number, "miscellaneous": number, "total": number },
+  "itinerary": [ { "day": 1, "title": "Day Title", "activities": ["Activity 1", "Activity 2", "Activity 3"], "estimatedCost": number } ]
+}
+4. All costs MUST be in INR (₹). Use realistic Indian tourist pricing.
+5. Each itinerary day: 3-4 activity strings under 12 words each.
+6. If destination/duration/style is missing, assume 5 days mid-range.
+7. NEVER repeat budget numbers in the text — the JSON renders the visual cards.`;
+
+    // Build Gemini contents (exclude the system note we injected)
+    const geminiContents = history.map(m => ({
+      role: m.role === "user" ? "user" : "model",
+      parts: [{ text: m.content.replace(/\[SYSTEM:.*?\]/s, "").trim() }],
     }));
 
-    // Inject formatting instructions as a system-level prefix (clean, non-polluting)
-    const systemNote = `\n\n[SYSTEM: Respond concisely. Max 3-5 lines of text. Output a single \`\`\`json block for any plan data. Do NOT repeat plan data in text.]`;
-    if (payload.length > 0 && payload[payload.length - 1].role === "user") {
-      payload[payload.length - 1].content += systemNote;
-    }
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: geminiContents,
+          generationConfig: { temperature: 0.8, maxOutputTokens: 4096 },
+        }),
+      }
+    );
 
-    const resp = await fetch(CHAT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ messages: payload }),
-    });
-
-    if (resp.status === 429) throw new Error("Rate limit exceeded — please wait.");
-    if (resp.status === 402) throw new Error("AI credits exhausted.");
-    if (!resp.ok || !resp.body) throw new Error("Failed to reach AI service.");
+    if (resp.status === 429) throw new Error("Rate limit exceeded — please wait a moment.");
+    if (resp.status === 400) throw new Error("Invalid request to Gemini API.");
+    if (!resp.ok || !resp.body) throw new Error("Failed to reach Gemini API.");
 
     const assistantId = Math.random().toString(36).substring(2);
     const assistantMsg: Message = { id: assistantId, role: "bot", content: "", timestamp: new Date() };
-    setMessages((prev) => [...prev, assistantMsg]);
+    setMessages(prev => [...prev, assistantMsg]);
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let assistantText = "";
-    let done = false;
 
-    while (!done) {
-      const { done: streamDone, value } = await reader.read();
-      if (streamDone) break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
       let nl: number;
       while ((nl = buffer.indexOf("\n")) !== -1) {
-        let line = buffer.slice(0, nl);
+        let line = buffer.slice(0, nl).trimEnd();
         buffer = buffer.slice(nl + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
         if (!line.startsWith("data: ")) continue;
         const json = line.slice(6).trim();
-        if (json === "[DONE]") { done = true; break; }
+        if (json === "[DONE]") break;
         try {
           const parsed = JSON.parse(json);
-          const delta = parsed.choices?.[0]?.delta?.content as string | undefined;
+          // Gemini SSE format: candidates[0].content.parts[0].text
+          const delta = parsed?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
           if (delta) {
             assistantText += delta;
-            let cleanText = assistantText.replace(/```json[\s\S]*?(```)?/g, "").trim();
-            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: cleanText } : m)));
+            const cleanText = assistantText.replace(/```json[\s\S]*?(```)?/g, "").trim();
+            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: cleanText } : m));
           }
-        } catch { buffer = line + "\n" + buffer; break; }
+        } catch { /* skip malformed chunks */ }
       }
     }
 
+    // Extract JSON block and attach to message
     let finalContent = assistantText;
-    let budgetCard = undefined;
-    let itinerary = undefined;
+    let budgetCard;
+    let itinerary;
     const jsonMatch = assistantText.match(/```json\s+([\s\S]+?)\s+```/);
     if (jsonMatch) {
       try {
@@ -137,10 +156,12 @@ const ChatInterface = () => {
         budgetCard = parsed.budgetCard;
         itinerary = parsed.itinerary;
         finalContent = assistantText.replace(jsonMatch[0], "").trim();
-      } catch (e) { console.error("Failed to parse JSON block", e); }
+      } catch (e) { console.error("JSON parse error", e); }
     }
 
-    setMessages((prev) => prev.map((m) => m.id === assistantId ? { ...m, content: finalContent, budgetCard, itinerary } : m));
+    setMessages(prev => prev.map(m =>
+      m.id === assistantId ? { ...m, content: finalContent, budgetCard, itinerary } : m
+    ));
   };
 
   const handleSend = useCallback((overrideText?: string) => {
@@ -252,7 +273,7 @@ const ChatInterface = () => {
 
       {/* ── Main Content ── */}
       <div className="flex-1 overflow-y-auto chat-scrollbar">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-10">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-8 space-y-6 min-h-[60vh]">
 
           {/* Welcome state */}
           {messages.length <= 1 && (
@@ -260,7 +281,7 @@ const ChatInterface = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="text-center py-16 md:py-24"
+              className="text-center py-8 md:py-12"
             >
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                 <Compass className="w-8 h-8 text-primary" />
@@ -271,7 +292,7 @@ const ChatInterface = () => {
               <p className="text-muted-foreground text-base md:text-lg max-w-md mx-auto leading-relaxed">
                 Plan complete trips with AI-powered budgets, itineraries, bookings, and local insights.
               </p>
-              <div className="flex flex-wrap justify-center gap-2 mt-8">
+              <div className="flex flex-wrap justify-center gap-3 mt-8">
                 {quickPrompts.map((prompt) => (
                   <button
                     key={prompt}
@@ -317,7 +338,7 @@ const ChatInterface = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about any destination, budget, or itinerary..."
+              placeholder="Where do you want to go?"
               className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm outline-none"
               disabled={isTyping}
             />

@@ -22,6 +22,8 @@ interface ChatMessageProps {
 const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
   const isUser = message.role === "user";
   const dest = message.budgetCard?.destination;
+  const isGreeting = !isUser && !message.budgetCard && !message.itinerary && !message.comparison
+    && (message.content.toLowerCase().includes("where") || message.content.toLowerCase().includes("plan") || message.content.toLowerCase().includes("hello") || message.content.toLowerCase().includes("hi"));
 
   const getChips = () => {
     if (isUser) return [];
@@ -48,6 +50,31 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
 
   // ── AI message: full-width dashboard presentation ──
   const hasPlan = !!(dest || message.budgetCard || message.itinerary);
+
+  // ── Styled welcome card for the initial greeting ──
+  if (isGreeting && !hasPlan) {
+    return (
+      <div className="rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/5 to-card p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary/80">SanYush AI</span>
+        </div>
+        <p className="text-foreground text-[15px] leading-relaxed font-medium">{message.content}</p>
+        {onChipClick && chips.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            {chips.map(chip => (
+              <button key={chip} onClick={() => onChipClick(chip)}
+                className="text-xs px-4 py-2 rounded-full bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-secondary/80 transition-all font-medium">
+                {chip}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-0">
@@ -127,12 +154,12 @@ const ChatMessage = ({ message, onChipClick }: ChatMessageProps) => {
 
       {/* Follow-up chips */}
       {onChipClick && (
-        <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-border">
+        <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border">
           {chips.map(chip => (
             <button
               key={chip}
               onClick={() => onChipClick(chip)}
-              className="text-xs px-4 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all font-medium border border-border/50"
+              className="text-xs px-4 py-2 rounded-full bg-secondary text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-secondary/80 transition-all font-medium border border-border"
             >
               {chip}
             </button>

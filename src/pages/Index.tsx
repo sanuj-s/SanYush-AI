@@ -1,7 +1,7 @@
-import ChatInterface from "@/components/ChatInterface";
+import GuidedPlanner from "@/components/GuidedPlanner";
 
 const Index = () => {
-  return <ChatInterface />;
+  return <GuidedPlanner />;
 };
 
 export default Index;
