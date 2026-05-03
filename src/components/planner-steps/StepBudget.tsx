@@ -84,7 +84,7 @@ export default function StepBudget({ state, updateState, onNext }: Props) {
                     setVal(p.val);
                     updateState({ budget: p.val });
                   }}
-                  className={`py-4 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all \${
+                  className={`py-4 px-2 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
                     isActive
                       ? "border-primary bg-primary/10 text-primary glow-primary transform -translate-y-1" 
                       : "border-border bg-card/50 text-foreground hover:border-primary/40 hover:bg-secondary"

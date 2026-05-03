@@ -39,13 +39,13 @@ export default function StepIntent({ state, updateState, onNext }: Props) {
                 if (id === "Solo") updateState({ intent: id, travelers: "Solo" });
                 setTimeout(onNext, 300);
               }}
-              className={`step-card p-6 flex items-start gap-5 text-left \${isSelected ? 'step-card-selected' : ''}`}
+              className={`step-card p-6 flex items-start gap-5 text-left ${isSelected ? 'step-card-selected' : ''}`}
             >
-              <div className={`p-4 rounded-xl shrink-0 transition-colors \${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+              <div className={`p-4 rounded-xl shrink-0 transition-colors ${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
                 <Icon className="w-7 h-7" />
               </div>
               <div>
-                <div className={`font-bold text-xl mb-1 transition-colors \${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
+                <div className={`font-bold text-xl mb-1 transition-colors ${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
                 <div className="text-sm text-muted-foreground font-medium">{desc}</div>
               </div>
             </motion.button>

@@ -9,14 +9,14 @@ interface PhotoGalleryProps {
 export default function PhotoGallery({ destination }: PhotoGalleryProps) {
   const encoded = encodeURIComponent(destination);
 
-  // We generate multiple unique image URLs by appending different query params
+  // We generate multiple unique image URLs using a deterministic seed based on the destination
   const images = [
-    `https://loremflickr.com/600/400/${encoded},landmark?random=1`,
-    `https://loremflickr.com/600/400/${encoded},street?random=2`,
-    `https://loremflickr.com/600/400/${encoded},food?random=3`,
-    `https://loremflickr.com/600/400/${encoded},nature?random=4`,
-    `https://loremflickr.com/600/400/${encoded},architecture?random=5`,
-    `https://loremflickr.com/600/400/${encoded},culture?random=6`,
+    `https://picsum.photos/seed/${encoded}1/600/400`,
+    `https://picsum.photos/seed/${encoded}2/600/400`,
+    `https://picsum.photos/seed/${encoded}3/600/400`,
+    `https://picsum.photos/seed/${encoded}4/600/400`,
+    `https://picsum.photos/seed/${encoded}5/600/400`,
+    `https://picsum.photos/seed/${encoded}6/600/400`,
   ];
 
   const [loaded, setLoaded] = useState<boolean[]>(new Array(images.length).fill(false));

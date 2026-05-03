@@ -36,13 +36,13 @@ export default function StepTravelers({ state, updateState, onNext }: Props) {
                 updateState({ travelers: id });
                 setTimeout(onNext, 300);
               }}
-              className={`step-card p-6 flex flex-col items-center text-center gap-4 \${isSelected ? 'step-card-selected' : ''}`}
+              className={`step-card p-6 flex flex-col items-center text-center gap-4 ${isSelected ? 'step-card-selected' : ''}`}
             >
-              <div className={`p-4 rounded-full transition-colors \${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+              <div className={`p-4 rounded-full transition-colors ${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
                 <Icon className="w-8 h-8" />
               </div>
               <div>
-                <div className={`font-bold text-xl mb-1 transition-colors \${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
+                <div className={`font-bold text-xl mb-1 transition-colors ${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
                 <div className="text-sm text-muted-foreground font-medium">{desc}</div>
               </div>
             </motion.button>

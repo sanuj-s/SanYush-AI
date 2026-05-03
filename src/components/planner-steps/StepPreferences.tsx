@@ -49,7 +49,7 @@ export default function StepPreferences({ state, updateState, onNext }: Props) {
             <button
               key={id}
               onClick={() => togglePref(id)}
-              className={`px-5 py-3.5 rounded-full border-2 flex items-center gap-2.5 transition-all font-semibold \${
+              className={`px-5 py-3.5 rounded-full border-2 flex items-center gap-2.5 transition-all font-semibold ${
                 isSelected 
                   ? "border-primary bg-primary text-primary-foreground scale-105 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]" 
                   : "border-border bg-card/50 text-foreground hover:border-primary/40 hover:bg-secondary/80"

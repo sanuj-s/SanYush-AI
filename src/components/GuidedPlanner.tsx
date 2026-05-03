@@ -106,7 +106,7 @@ export default function GuidedPlanner() {
           <motion.div 
             className="h-full bg-gradient-to-r from-primary to-terracotta"
             initial={{ width: 0 }}
-            animate={{ width: \`\${(currentStepIndex / (steps.length - 2)) * 100}%\` }}
+            animate={{ width: `${(currentStepIndex / (steps.length - 2)) * 100}%` }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
           />
         </div>
@@ -116,7 +116,7 @@ export default function GuidedPlanner() {
       <div className="flex-1 relative z-10 flex overflow-hidden">
         
         {/* Left: Questions Area */}
-        <div className={\`flex-1 relative overflow-y-auto chat-scrollbar flex flex-col \${isOutput ? "w-full" : "md:w-3/5"}\`}>
+        <div className={`flex-1 relative overflow-y-auto chat-scrollbar flex flex-col ${isOutput ? "w-full" : "md:w-3/5"}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStepId}
@@ -124,7 +124,7 @@ export default function GuidedPlanner() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -15, scale: 0.98 }}
               transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className={\`w-full max-w-2xl mx-auto px-6 py-10 flex-1 flex flex-col \${isOutput ? "justify-start max-w-5xl" : "justify-center"}\`}
+              className={`w-full max-w-2xl mx-auto px-6 py-10 flex-1 flex flex-col ${isOutput ? "justify-start max-w-5xl" : "justify-center"}`}
             >
               {currentStepId === "INTENT" && <StepIntent state={state} updateState={updateState} onNext={nextStep} />}
               {currentStepId === "DESTINATION" && <StepDestination state={state} updateState={updateState} onNext={nextStep} />}

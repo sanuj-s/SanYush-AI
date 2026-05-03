@@ -36,14 +36,14 @@ export default function StepStyle({ state, updateState, onNext }: Props) {
                 updateState({ style: id });
                 setTimeout(onNext, 300);
               }}
-              className={`step-card p-5 flex items-center gap-5 text-left \${isSelected ? 'step-card-selected' : ''}`}
+              className={`step-card p-5 flex items-center gap-5 text-left ${isSelected ? 'step-card-selected' : ''}`}
             >
-              <div className={`p-4 rounded-xl shrink-0 transition-colors \${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+              <div className={`p-4 rounded-xl shrink-0 transition-colors ${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                  <div className={`font-bold text-lg transition-colors \${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
+                  <div className={`font-bold text-lg transition-colors ${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
                   <div className="hidden md:block text-xs font-semibold text-muted-foreground bg-secondary px-2 py-1 rounded-md">
                     {example}
                   </div>

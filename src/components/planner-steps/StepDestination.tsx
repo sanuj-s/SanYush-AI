@@ -47,10 +47,10 @@ export default function StepDestination({ state, updateState, onNext }: Props) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <div 
             onClick={() => setActiveMode("known")}
-            className={`step-card p-6 transition-all \${activeMode === "known" ? 'border-primary ring-1 ring-primary/30' : ''}`}
+            className={`step-card p-6 transition-all ${activeMode === "known" ? 'border-primary ring-1 ring-primary/30' : ''}`}
           >
             <div className="flex items-center gap-4 mb-4">
-              <div className={`p-3 rounded-xl \${activeMode === "known" ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+              <div className={`p-3 rounded-xl ${activeMode === "known" ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
                 <MapPin className="w-6 h-6" />
               </div>
               <div className="text-lg font-bold text-foreground">I know where I want to go</div>
@@ -107,10 +107,10 @@ export default function StepDestination({ state, updateState, onNext }: Props) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <button
             onClick={handleSuggest}
-            className={`w-full text-left step-card p-6 flex items-center justify-between group \${activeMode === "suggest" ? 'step-card-selected' : ''}`}
+            className={`w-full text-left step-card p-6 flex items-center justify-between group ${activeMode === "suggest" ? 'step-card-selected' : ''}`}
           >
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl transition-colors \${activeMode === "suggest" ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}`}>
+              <div className={`p-3 rounded-xl transition-colors ${activeMode === "suggest" ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}`}>
                 <Sparkles className="w-6 h-6" />
               </div>
               <div>
@@ -118,7 +118,7 @@ export default function StepDestination({ state, updateState, onNext }: Props) {
                 <div className="text-sm text-muted-foreground font-medium mt-1">Based on my budget & vibes</div>
               </div>
             </div>
-            <ArrowRight className={`w-6 h-6 transition-colors \${activeMode === "suggest" ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
+            <ArrowRight className={`w-6 h-6 transition-colors ${activeMode === "suggest" ? 'text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
           </button>
         </motion.div>
       </div>

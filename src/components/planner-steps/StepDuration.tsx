@@ -36,18 +36,18 @@ export default function StepDuration({ state, updateState, onNext }: Props) {
                 updateState({ duration: id });
                 setTimeout(onNext, 300);
               }}
-              className={`step-card p-6 flex flex-col gap-4 text-left \${isSelected ? 'step-card-selected' : ''}`}
+              className={`step-card p-6 flex flex-col gap-4 text-left ${isSelected ? 'step-card-selected' : ''}`}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-3 rounded-xl shrink-0 transition-colors \${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+                <div className={`p-3 rounded-xl shrink-0 transition-colors ${isSelected ? 'bg-primary text-primary-foreground glow-primary' : 'bg-secondary text-muted-foreground'}`}>
                   <Icon className="w-6 h-6" />
                 </div>
-                <div className={`text-sm font-bold px-3 py-1 rounded-full \${isSelected ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
+                <div className={`text-sm font-bold px-3 py-1 rounded-full ${isSelected ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}`}>
                   {desc}
                 </div>
               </div>
               <div>
-                <div className={`font-bold text-xl mb-1 transition-colors \${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
+                <div className={`font-bold text-xl mb-1 transition-colors ${isSelected ? 'text-primary' : 'text-foreground'}`}>{label}</div>
               </div>
             </motion.button>
           );

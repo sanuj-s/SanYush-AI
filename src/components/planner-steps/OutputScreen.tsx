@@ -189,7 +189,7 @@ export default function OutputScreen({ state, onReset }: Props) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm transition-all whitespace-nowrap \${isActive ? 'tab-active' : 'tab-inactive'}`}
+              className={`flex items-center gap-2 px-4 py-3 text-sm transition-all whitespace-nowrap ${isActive ? 'tab-active' : 'tab-inactive'}`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}

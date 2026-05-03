@@ -45,10 +45,10 @@ export default function StepDates({ state, updateState, onNext }: Props) {
                     setTimeout(onNext, 300);
                   }
                 }}
-                className={`w-full text-left step-card p-6 transition-all \${isSelected ? 'border-primary ring-1 ring-primary/30' : ''}`}
+                className={`w-full text-left step-card p-6 transition-all ${isSelected ? 'border-primary ring-1 ring-primary/30' : ''}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`p-3 rounded-xl \${isSelected ? 'bg-primary/20 text-primary glow-primary' : 'bg-secondary text-muted-foreground'}`}>
+                  <div className={`p-3 rounded-xl ${isSelected ? 'bg-primary/20 text-primary glow-primary' : 'bg-secondary text-muted-foreground'}`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <div>
