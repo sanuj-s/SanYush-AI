@@ -48,13 +48,20 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer utilities {
+  /* ── Glass Card ── */
+  .glass-card {
+    background: hsl(216 28% 10% / 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow: 0 4px 24px hsl(0 0% 0% / 0.3);
+  }
+
   .luxury-card {
     @apply bg-card border border-border/60 shadow-sm;
   }
@@ -249,6 +256,14 @@
   }
   .tab-inactive:hover {
     color: hsl(var(--foreground));
+  }
+
+  /* ── Travel theme colors ── */
+  .text-travel-gold {
+    color: hsl(var(--primary));
+  }
+  .text-travel-green {
+    color: hsl(var(--accent));
   }
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DollarSign, Euro, PoundSterling, RefreshCcw } from "lucide-react";
+import { DollarSign, RefreshCcw } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface CurrencyConverterProps {

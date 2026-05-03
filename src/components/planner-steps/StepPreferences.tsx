@@ -1,5 +1,5 @@
 import { PlannerState } from "./types";
-import { ArrowRight, Waves, Mountain, Music, Camera, Utensils, ShoppingBag, Trees, Sparkles, Coffee, Palmtree, Tent } from "lucide-react";
+import { ArrowRight, Waves, Mountain, Music, Camera, Utensils, ShoppingBag, Trees, Sparkles, Coffee, TreePalm, Tent } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface Props {
@@ -18,7 +18,7 @@ const prefs = [
   { id: "Nature", icon: Trees },
   { id: "Wellness", icon: Sparkles },
   { id: "Cafes", icon: Coffee },
-  { id: "Resorts", icon: Palmtree },
+  { id: "Resorts", icon: TreePalm },
   { id: "Camping", icon: Tent },
 ];
 

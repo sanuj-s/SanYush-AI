@@ -55,7 +55,7 @@ export class PlanningEngine {
     activities = Math.round(activities / 500) * 500;
     miscellaneous = Math.round(miscellaneous / 500) * 500;
 
-    let total = travel + hotel + food + activities + miscellaneous;
+    const total = travel + hotel + food + activities + miscellaneous;
     
     return {
       travel,

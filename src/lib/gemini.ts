@@ -70,7 +70,8 @@ CRITICAL INSTRUCTION: Respond ONLY with a valid JSON object in this EXACT format
   }
 
   try {
-    const parsed = JSON.parse(contentText);
+    const cleanText = contentText.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleanText);
     return parsed;
   } catch (e) {
     console.error("Failed to parse Gemini JSON:", contentText);

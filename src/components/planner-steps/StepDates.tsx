@@ -9,6 +9,11 @@ interface Props {
   onNext: () => void;
 }
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 const options = [
   { id: "Fixed", label: "Fixed Dates", desc: "I know exactly when I'm traveling", icon: CalendarCheck },
   { id: "Flexible", label: "Flexible (±7 days)", desc: "Find the best deals around my dates", icon: Calendar },
@@ -17,8 +22,21 @@ const options = [
 
 export default function StepDates({ state, updateState, onNext }: Props) {
   const [activeMode, setActiveMode] = useState<string | null>(
-    state.dates === "Flexible" || state.dates === "Month" ? state.dates : state.dates ? "Fixed" : null
+    state.dates === "Flexible" || state.dates?.startsWith("Anytime") ? (state.dates.startsWith("Anytime") ? "Month" : state.dates) : state.dates ? "Fixed" : null
   );
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+
+  const formatDateRange = (start: string, end: string) => {
+    if (!start) return "";
+    const s = new Date(start);
+    const startStr = s.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    if (!end) return startStr;
+    const e = new Date(end);
+    const endStr = e.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+    return `${startStr} – ${endStr}`;
+  };
 
   return (
     <div className="w-full">
@@ -40,8 +58,8 @@ export default function StepDates({ state, updateState, onNext }: Props) {
               <button
                 onClick={() => {
                   setActiveMode(id);
-                  if (id !== "Fixed") {
-                    updateState({ dates: id });
+                  if (id === "Flexible") {
+                    updateState({ dates: "Flexible" });
                     setTimeout(onNext, 300);
                   }
                 }}
@@ -57,7 +75,7 @@ export default function StepDates({ state, updateState, onNext }: Props) {
                   </div>
                 </div>
 
-                {/* Inline Date Picker for Fixed Mode */}
+                {/* Fixed Dates: inline date pickers */}
                 <AnimatePresence>
                   {id === "Fixed" && isSelected && (
                     <motion.div
@@ -70,21 +88,74 @@ export default function StepDates({ state, updateState, onNext }: Props) {
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div>
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Start Date</label>
-                          <input type="date" className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none border border-border focus:border-primary/50 text-sm font-medium transition-all" />
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            min={new Date().toISOString().split("T")[0]}
+                            className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none border border-border focus:border-primary/50 text-sm font-medium transition-all"
+                          />
                         </div>
                         <div>
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">End Date</label>
-                          <input type="date" className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none border border-border focus:border-primary/50 text-sm font-medium transition-all" />
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            min={startDate || new Date().toISOString().split("T")[0]}
+                            className="w-full bg-secondary text-foreground px-4 py-3 rounded-xl outline-none border border-border focus:border-primary/50 text-sm font-medium transition-all"
+                          />
                         </div>
                       </div>
                       <button
                         onClick={() => {
-                          updateState({ dates: "Fixed Dates" });
+                          const dateStr = formatDateRange(startDate, endDate) || "Fixed Dates";
+                          updateState({ dates: dateStr });
                           onNext();
                         }}
-                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                        disabled={!startDate}
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         Confirm Dates <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Month picker */}
+                <AnimatePresence>
+                  {id === "Month" && isSelected && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mt-4 pt-4 border-t border-border/50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-2 mb-4">
+                        {MONTHS.map((month) => (
+                          <button
+                            key={month}
+                            onClick={() => setSelectedMonth(month)}
+                            className={`py-2.5 px-2 rounded-xl text-sm font-semibold transition-all ${
+                              selectedMonth === month
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border"
+                            }`}
+                          >
+                            {month.slice(0, 3)}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          updateState({ dates: `Anytime in ${selectedMonth}` });
+                          onNext();
+                        }}
+                        disabled={!selectedMonth}
+                        className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Confirm Month <ArrowRight className="w-4 h-4" />
                       </button>
                     </motion.div>
                   )}

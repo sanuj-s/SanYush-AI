@@ -12,6 +12,7 @@ import StepPreferences from "./planner-steps/StepPreferences";
 import OutputScreen from "./planner-steps/OutputScreen";
 import LivePreviewPanel from "./planner-steps/LivePreviewPanel";
 import { ChevronLeft, Compass, Menu } from "lucide-react";
+import { clearAIEstimateCache } from "../hooks/useAIEstimate";
 
 const steps = [
   "INTENT",
@@ -134,7 +135,7 @@ export default function GuidedPlanner() {
               {currentStepId === "STYLE" && <StepStyle state={state} updateState={updateState} onNext={nextStep} />}
               {currentStepId === "DATES" && <StepDates state={state} updateState={updateState} onNext={nextStep} />}
               {currentStepId === "PREFERENCES" && <StepPreferences state={state} updateState={updateState} onNext={nextStep} />}
-              {currentStepId === "OUTPUT" && <OutputScreen state={state} onReset={() => { setState(initialPlannerState); setCurrentStepIndex(0); }} />}
+              {currentStepId === "OUTPUT" && <OutputScreen state={state} onReset={() => { clearAIEstimateCache(); setState(initialPlannerState); setCurrentStepIndex(0); }} />}
             </motion.div>
           </AnimatePresence>
         </div>

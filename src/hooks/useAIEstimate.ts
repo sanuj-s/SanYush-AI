@@ -2,17 +2,32 @@ import { useState, useEffect, useRef } from "react";
 
 const cache = new Map<string, number>();
 
-export function useAIEstimate(destination: string | null, days: number, travelers: string, style: string, maxBudget: number, fallbackTotal: number) {
+/** Clear the AI estimate cache (call on planner reset) */
+export function clearAIEstimateCache() {
+  cache.clear();
+}
+
+export function useAIEstimate(
+  destination: string | null,
+  days: number,
+  travelers: string,
+  style: string,
+  maxBudget: number,
+  fallbackTotal: number
+) {
   const [estimate, setEstimate] = useState<number>(fallbackTotal);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setEstimate(fallbackTotal); // Instantly show fallback
-    
-    if (!destination) return;
+    // Always show the deterministic fallback immediately
+    setEstimate(fallbackTotal);
 
-    const cacheKey = `${destination}-${days}-${travelers}-${style}`;
+    // Don't call AI if no destination is provided
+    if (!destination || !destination.trim()) return;
+
+    // Build a cache key that includes ALL variables
+    const cacheKey = `${destination.toLowerCase()}-${days}-${travelers}-${style}-${maxBudget}`;
     if (cache.has(cacheKey)) {
       setEstimate(cache.get(cacheKey)!);
       return;
@@ -38,7 +53,10 @@ export function useAIEstimate(destination: string | null, days: number, traveler
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{ role: "user", parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.3, responseMimeType: "application/json" },
+              generationConfig: {
+                temperature: 0.3,
+                responseMimeType: "application/json",
+              },
             }),
           }
         );
@@ -48,14 +66,23 @@ export function useAIEstimate(destination: string | null, days: number, traveler
         const data = await resp.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) {
-          const parsed = JSON.parse(text);
-          if (parsed.total && typeof parsed.total === "number") {
-            cache.set(cacheKey, parsed.total);
-            setEstimate(parsed.total);
+          const cleanText = text
+            .replace(/```json/gi, "")
+            .replace(/```/g, "")
+            .trim();
+          try {
+            const parsed = JSON.parse(cleanText);
+            if (parsed.total && typeof parsed.total === "number") {
+              cache.set(cacheKey, parsed.total);
+              setEstimate(parsed.total);
+            }
+          } catch (parseError) {
+            console.error("JSON parse error:", text);
           }
         }
       } catch (e) {
         console.error("AI Estimate error:", e);
+        // Keep showing the fallback — no action needed
       } finally {
         setLoading(false);
       }
