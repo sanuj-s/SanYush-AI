@@ -10,6 +10,15 @@ export class PlanningEngine {
     return travelerCount;
   }
 
+  static getDaysFromDuration(durationStr: string | undefined): number {
+    if (!durationStr) return 3;
+    if (durationStr === "Weekend") return 3;
+    if (durationStr === "Short") return 5;
+    if (durationStr.includes("1 week")) return 7;
+    if (durationStr.includes("2 weeks")) return 14;
+    return parseInt(durationStr.split(" ")[0]) || 3;
+  }
+
   static calculateEstimatedBudget(destination: string, days: number, travelers: number, style: string, maxBudget: number) {
     const destKey = destination.toLowerCase().trim();
     let index = 1.0;
@@ -100,7 +109,7 @@ export class PlanningEngine {
   }
 
   static run(state: PlannerState, targetDest: string) {
-    const days = parseInt(state.duration.split(" ")[0]) || 3;
+    const days = this.getDaysFromDuration(state.duration);
     const travelerCount = this.getTravelerCount(state.travelers);
     
     const dest = targetDest || state.destination || "Unknown Destination";

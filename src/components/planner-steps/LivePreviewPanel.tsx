@@ -13,7 +13,7 @@ export default function LivePreviewPanel({ state }: Props) {
   const hasStarted = state.intent || state.destination || state.budget !== 50000 || state.duration;
 
   // Calculate live estimate based on what we know so far
-  const days = state.duration ? (parseInt(state.duration.split(" ")[0]) || 3) : 3;
+  const days = PlanningEngine.getDaysFromDuration(state.duration);
   const travelerCount = PlanningEngine.getTravelerCount(state.travelers || "Solo");
   
   // If we have a destination, calculate the real cost. Otherwise, show their max budget multiplied by travelers as a placeholder.
