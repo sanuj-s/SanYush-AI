@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { PlannerState } from "./types";
-import { Loader2, RefreshCcw, Home, Download, Settings, Map as MapIcon, Calendar as CalendarIcon, Wallet as WalletIcon, BaggageClaim } from "lucide-react";
-import { goldenPaths, applyFakeVariability } from "../../lib/golden-paths";
+import { Loader2, RefreshCcw, Home, Download, Settings, Map as MapIcon, Calendar as CalendarIcon, Wallet as WalletIcon, BaggageClaim, Plane, Hotel } from "lucide-react";
+import { goldenPaths } from "../../lib/golden-paths";
 import { motion, AnimatePresence } from "framer-motion";
 import BudgetCard from "../BudgetCard";
 import BudgetSplitter from "../BudgetSplitter";
@@ -30,6 +30,10 @@ export default function OutputScreen({ state, onReset }: Props) {
   const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Plan customization state
+  const [includeFlight, setIncludeFlight] = useState(true);
+  const [includeHotel, setIncludeHotel] = useState(true);
+
   useEffect(() => {
     if (state.destinationMode === "known") {
       generatePlan(state.destination.toLowerCase());
@@ -54,7 +58,28 @@ export default function OutputScreen({ state, onReset }: Props) {
       if (matchedPath) {
         console.log("DEMO MODE: Intercepting query and loading Golden Path JSON.");
         await new Promise(r => setTimeout(r, 1500));
-        const dynamicPlan = applyFakeVariability(matchedPath, state.budget);
+        
+        // Dynamically calculate budget for the golden path instead of using hardcoded ones
+        const travelerCount = PlanningEngine.getTravelerCount(state.travelers);
+        const dynamicBudget = PlanningEngine.calculateEstimatedBudget(
+          matchedPath.budgetCard.destination, 
+          matchedPath.budgetCard.days, 
+          travelerCount, 
+          state.style || "Balanced", 
+          state.budget
+        );
+
+        const dynamicPlan = {
+          budgetCard: {
+            destination: matchedPath.budgetCard.destination,
+            days: matchedPath.budgetCard.days,
+            style: state.style || "Balanced",
+            ...dynamicBudget
+          },
+          itinerary: matchedPath.itinerary,
+          confidenceScore: 98
+        };
+        
         setPlan(dynamicPlan);
         setLoading(false);
         return;
@@ -110,8 +135,6 @@ export default function OutputScreen({ state, onReset }: Props) {
     );
   }
 
-  const dest = plan?.budgetCard?.destination;
-
   const handleSimulate = async (type: string) => {
     setLoading(true);
     await new Promise(r => setTimeout(r, 800)); 
@@ -152,6 +175,26 @@ export default function OutputScreen({ state, onReset }: Props) {
     { id: "packing", label: "Packing List", icon: BaggageClaim },
   ];
 
+  // Derived state based on toggles
+  const getDisplayPlan = () => {
+    if (!plan) return null;
+    const p = JSON.parse(JSON.stringify(plan));
+    if (!p.budgetCard) return p;
+
+    if (!includeFlight) {
+      p.budgetCard.total -= p.budgetCard.travel;
+      p.budgetCard.travel = 0;
+    }
+    if (!includeHotel) {
+      p.budgetCard.total -= p.budgetCard.hotel;
+      p.budgetCard.hotel = 0;
+    }
+    return p;
+  };
+
+  const displayPlan = getDisplayPlan();
+  const dest = displayPlan?.budgetCard?.destination;
+
   return (
     <div className="w-full pb-20">
       
@@ -166,7 +209,7 @@ export default function OutputScreen({ state, onReset }: Props) {
               <span className="text-gradient-warm">{dest}</span>
             </h2>
             <p className="text-muted-foreground text-lg">
-              Tailored {state.intent} plan for {state.travelers} · {plan?.budgetCard?.days} days
+              Tailored {state.intent} plan for {state.travelers} · {displayPlan?.budgetCard?.days} days
             </p>
           </div>
           
@@ -213,8 +256,48 @@ export default function OutputScreen({ state, onReset }: Props) {
             <div className="space-y-8">
               {dest && <PhotoGallery destination={dest} />}
               
-              <ExplainabilityWidget state={state} plan={plan} />
+              <ExplainabilityWidget state={state} plan={displayPlan} />
               
+              {/* Plan Customizer */}
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <div className="mb-4">
+                  <h3 className="font-bold text-foreground text-lg mb-1">Customize Included Costs</h3>
+                  <p className="text-sm text-muted-foreground">Toggle items to see how they impact your estimated budget.</p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label onClick={() => setIncludeFlight(!includeFlight)} className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${includeFlight ? 'border-primary bg-primary/5' : 'border-border bg-secondary/50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${includeFlight ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'}`}>
+                        <Plane className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground">Include Travel</div>
+                        <div className="text-xs text-muted-foreground">Flights, trains, transfers</div>
+                      </div>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${includeFlight ? 'bg-primary' : 'bg-border'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${includeFlight ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </div>
+                  </label>
+                  
+                  <label onClick={() => setIncludeHotel(!includeHotel)} className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${includeHotel ? 'border-primary bg-primary/5' : 'border-border bg-secondary/50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${includeHotel ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground'}`}>
+                        <Hotel className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-foreground">Include Stay</div>
+                        <div className="text-xs text-muted-foreground">Hotels, resorts, Airbnb</div>
+                      </div>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-colors flex items-center px-1 ${includeHotel ? 'bg-primary' : 'bg-border'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white transition-transform ${includeHotel ? 'translate-x-4' : 'translate-x-0'}`} />
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between p-6 bg-card border border-border rounded-2xl">
                 <div>
                   <h3 className="font-bold text-foreground text-lg mb-1">Want to tweak the parameters?</h3>
@@ -230,19 +313,19 @@ export default function OutputScreen({ state, onReset }: Props) {
           )}
 
           {/* Itinerary Tab */}
-          {activeTab === "itinerary" && plan?.itinerary && (
+          {activeTab === "itinerary" && displayPlan?.itinerary && (
             <div className="space-y-6">
-              <TimelineItinerary itinerary={plan.itinerary} />
+              <TimelineItinerary itinerary={displayPlan.itinerary} />
             </div>
           )}
 
           {/* Budget Tab */}
-          {activeTab === "budget" && plan?.budgetCard && (
+          {activeTab === "budget" && displayPlan?.budgetCard && (
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <BudgetCard budget={plan.budgetCard} />
-                <BudgetSplitter budget={plan.budgetCard} />
-                <CurrencyConverter amountInr={plan.budgetCard.total} />
+                <BudgetCard budget={displayPlan.budgetCard} />
+                <BudgetSplitter budget={displayPlan.budgetCard} />
+                <CurrencyConverter amountInr={displayPlan.budgetCard.total} />
               </div>
               
               {dest && <BookingLinks destination={dest} />}

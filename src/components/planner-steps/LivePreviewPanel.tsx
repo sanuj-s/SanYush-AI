@@ -6,9 +6,27 @@ interface Props {
   state: PlannerState;
 }
 
+import { PlanningEngine } from "../../lib/planning-engine";
+
 export default function LivePreviewPanel({ state }: Props) {
   // Determine if we have enough data to show a preview
   const hasStarted = state.intent || state.destination || state.budget !== 50000 || state.duration;
+
+  // Calculate live estimate based on what we know so far
+  const days = state.duration ? (parseInt(state.duration.split(" ")[0]) || 3) : 3;
+  const travelerCount = PlanningEngine.getTravelerCount(state.travelers || "Solo");
+  
+  // If we have a destination, calculate the real cost. Otherwise, show their max budget multiplied by travelers as a placeholder.
+  let liveBudget = state.budget * travelerCount;
+  if (state.destination && state.destinationMode === "known") {
+    liveBudget = PlanningEngine.calculateEstimatedBudget(
+      state.destination, 
+      days, 
+      travelerCount, 
+      state.style || "Balanced", 
+      state.budget
+    ).total;
+  }
 
   if (!hasStarted) {
     return (
@@ -77,16 +95,16 @@ export default function LivePreviewPanel({ state }: Props) {
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-1">
               <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
-                <Wallet className="w-3.5 h-3.5" /> Est. Budget
+                <Wallet className="w-3.5 h-3.5" /> Est. Trip Cost
               </div>
             </div>
             <motion.div 
-              key={state.budget}
+              key={liveBudget}
               initial={{ scale: 1.1, color: "hsl(var(--primary))" }}
               animate={{ scale: 1, color: "hsl(var(--foreground))" }}
               className="text-3xl font-extrabold text-gradient-warm tracking-tight"
             >
-              ₹{state.budget.toLocaleString("en-IN")}
+              ₹{liveBudget.toLocaleString("en-IN")}
             </motion.div>
           </div>
         </motion.div>
