@@ -17,6 +17,7 @@ import MultiPlanSelector from "./MultiPlanSelector";
 import ScenarioSimulator from "./ScenarioSimulator";
 import ExplainabilityWidget from "./ExplainabilityWidget";
 import { PlanningEngine } from "../../lib/planning-engine";
+import { generatePlanWithGemini } from "../../lib/gemini";
 
 interface Props {
   state: PlannerState;
@@ -86,13 +87,18 @@ export default function OutputScreen({ state, onReset }: Props) {
       }
       // ------------------------------------
 
-      // --- DETERMINISTIC ENGINE FALLBACK ---
-      await new Promise(r => setTimeout(r, 1200)); 
-      const generatedPlan = PlanningEngine.run(state, targetDestString);
+      // --- TRUE AI ENGINE ---
+      const generatedPlan = await generatePlanWithGemini(state, targetDestString);
       setPlan(generatedPlan);
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "An unexpected error occurred.");
+      // Fallback to deterministic if AI fails
+      try {
+        const fallbackPlan = PlanningEngine.run(state, targetDestString);
+        setPlan(fallbackPlan);
+      } catch (fallbackError) {
+        setError(e.message || "An unexpected error occurred.");
+      }
     } finally {
       setLoading(false);
     }

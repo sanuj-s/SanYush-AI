@@ -8,6 +8,8 @@ interface Props {
 
 import { PlanningEngine } from "../../lib/planning-engine";
 
+import { useAIEstimate } from "../../hooks/useAIEstimate";
+
 export default function LivePreviewPanel({ state }: Props) {
   // Determine if we have enough data to show a preview
   const hasStarted = state.intent || state.destination || state.budget !== 50000 || state.duration;
@@ -16,10 +18,10 @@ export default function LivePreviewPanel({ state }: Props) {
   const days = PlanningEngine.getDaysFromDuration(state.duration);
   const travelerCount = PlanningEngine.getTravelerCount(state.travelers || "Solo");
   
-  // If we have a destination, calculate the real cost. Otherwise, show their max budget multiplied by travelers as a placeholder.
-  let liveBudget = state.budget * travelerCount;
+  // Calculate deterministic fallback first
+  let fallbackBudget = state.budget * travelerCount;
   if (state.destination && state.destinationMode === "known") {
-    liveBudget = PlanningEngine.calculateEstimatedBudget(
+    fallbackBudget = PlanningEngine.calculateEstimatedBudget(
       state.destination, 
       days, 
       travelerCount, 
@@ -27,6 +29,16 @@ export default function LivePreviewPanel({ state }: Props) {
       state.budget
     ).total;
   }
+
+  // Hook into AI estimate
+  const { estimate: liveBudget, loading: aiLoading } = useAIEstimate(
+    state.destinationMode === "known" ? state.destination : null,
+    days,
+    state.travelers || "Solo",
+    state.style || "Balanced",
+    state.budget,
+    fallbackBudget
+  );
 
   if (!hasStarted) {
     return (
@@ -97,12 +109,17 @@ export default function LivePreviewPanel({ state }: Props) {
               <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
                 <Wallet className="w-3.5 h-3.5" /> Est. Trip Cost
               </div>
+              {aiLoading && (
+                <div className="text-[10px] text-primary flex items-center gap-1 font-bold animate-pulse">
+                  <span className="w-2 h-2 rounded-full bg-primary inline-block"></span> AI Estimating
+                </div>
+              )}
             </div>
             <motion.div 
               key={liveBudget}
               initial={{ scale: 1.1, color: "hsl(var(--primary))" }}
               animate={{ scale: 1, color: "hsl(var(--foreground))" }}
-              className="text-3xl font-extrabold text-gradient-warm tracking-tight"
+              className={`text-3xl font-extrabold text-gradient-warm tracking-tight transition-opacity ${aiLoading ? 'opacity-50' : 'opacity-100'}`}
             >
               ₹{liveBudget.toLocaleString("en-IN")}
             </motion.div>
